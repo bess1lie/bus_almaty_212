@@ -82,7 +82,9 @@ export async function initAudio() {
   rainGain.connect(master);
   rain.start();
 
-  await ctx.resume();
+  // НЕ ждём resume: браузер разблокирует звук после первого клика пользователя.
+  // Ожидание здесь заблокировало бы всю загрузку игры.
+  void ctx.resume().catch(() => {});
 }
 
 /** Обновить звук двигателя: rpm 0..1, нагрузка 0..1. */

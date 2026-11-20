@@ -29,7 +29,7 @@ export class Bus {
   private visual: BusVisual | null = null;
   private fallback: THREE.Group | null = null;
 
-  private cameraMode: CameraMode = 'chase';
+  private cameraMode: CameraMode = 'driver';
   doorsOpen = false;
   private speed = 0;
   private steerAngle = 0;
@@ -40,20 +40,23 @@ export class Bus {
 
     const world = getPhysicsWorld();
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setLinearDamping(0.05)
-      .setAngularDamping(0.5);
+      .setLinearDamping(0.3)
+      .setAngularDamping(2.0)
+      // автобус не должен кувыркаться — только поворот вокруг вертикальной оси
+      .enabledRotations(false, true, false);
     this.body = world.createRigidBody(bodyDesc);
 
+    // Центр масс = центр кузова. Пол пола на Y=0, поэтому ставим тело на BODY_HALF_HEIGHT.
     const colliderDesc = RAPIER.ColliderDesc.cuboid(
       BUS_LENGTH / 2,
       BODY_HALF_HEIGHT,
       BUS_WIDTH / 2
     );
-    colliderDesc.setTranslation(0, BODY_HALF_HEIGHT, 0);
-    colliderDesc.setFriction(1.0);
+    colliderDesc.setMass(13000); // 13 тонн
+    colliderDesc.setFriction(1.2);
     world.createCollider(colliderDesc, this.body);
 
-    this.body.setTranslation({ x: 0, y: BODY_HALF_HEIGHT + 0.05, z: 0 }, true);
+    this.body.setTranslation({ x: 0, y: BODY_HALF_HEIGHT + 0.1, z: 0 }, true);
     this.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
 
     this.buildFallback();
@@ -165,15 +168,18 @@ export class Bus {
     if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
     forward.normalize();
 
-    const force = new this.rapi.Vector3(
-      forward.x * this.speed * 4000,
-      0,
-      forward.z * this.speed * 4000
+    // Прямое задание скорости — стабильно, без накопления силы.
+    // Вертикальную скорость оставляем физике (гравитация/пол).
+    const vel = this.body.linvel();
+    this.body.setLinvel(
+      { x: forward.x * this.speed, y: vel.y, z: forward.z * this.speed },
+      true
     );
-    this.body.addForce(force, true);
 
-    const turnTorque = this.steerAngle * 20000 * Math.sign(this.speed || 1);
-    this.body.addTorque(new this.rapi.Vector3(0, turnTorque, 0), true);
+    // Поворот вокруг Y — напрямую через угловую скорость.
+    // Скорость поворота зависит от скорости движения.
+    const turnRate = this.steerAngle * Math.min(1, Math.abs(this.speed) / 4) * 1.8;
+    this.body.setAngvel({ x: 0, y: turnRate, z: 0 }, true);
 
     // Визуал
     if (this.visual) {

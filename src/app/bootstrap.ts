@@ -23,7 +23,7 @@ let hud: HUD;
 
 let frameCount = 0;
 let lastFpsTime = 0;
-let currentMode: 'driver' | 'chase' = 'chase';
+let currentMode: 'driver' | 'chase' = 'driver';
 
 // Тач-зоны
 let touchSteer = 0;

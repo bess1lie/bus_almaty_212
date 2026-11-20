@@ -15,6 +15,7 @@ export type InputState = {
   camera: boolean;
   horn: boolean;
   reset: boolean;
+  timeOfDay: boolean;
 };
 
 // --- Клавиатура ---
@@ -27,6 +28,7 @@ const kbd = {
   camera: false,
   horn: false,
   reset: false,
+  timeOfDay: false,
 };
 
 // --- Геймпад (только оси и кнопки, без импульсов) ---
@@ -76,6 +78,9 @@ function onKeyDown(e: KeyboardEvent) {
       break;
     case 'KeyR':
       kbd.reset = true;
+      break;
+    case 'KeyN':
+      kbd.timeOfDay = true;
       break;
   }
 }
@@ -170,6 +175,7 @@ export function getInput(): Readonly<InputState> {
     camera: kbd.camera,
     horn: kbd.horn,
     reset: kbd.reset,
+    timeOfDay: kbd.timeOfDay,
   };
 }
 
@@ -179,6 +185,7 @@ export function clearFrameFlags() {
   kbd.camera = false;
   kbd.horn = false;
   kbd.reset = false;
+  kbd.timeOfDay = false;
 }
 
 export function initInput() {

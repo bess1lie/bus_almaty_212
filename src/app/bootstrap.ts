@@ -200,6 +200,21 @@ function setupLookControl(dom: HTMLElement) {
 }
 
 function setupMenuButtons() {
+  // Кнопки выбора линии
+  document.querySelectorAll<HTMLElement>('[data-route]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = btn.dataset.route;
+      const route = id ? ROUTES.find((r) => r.id === id) : undefined;
+      if (route) {
+        routeTracker.selectRoute(route, 0);
+        hud.setRoute(route.id, route.directions[0]?.to ?? route.name_ru, 0);
+        hud.startGame();
+        console.info('[routes] выбрана линия', route.id, route.name_ru);
+      }
+    });
+  });
+
   document.querySelectorAll<HTMLElement>('[data-action]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -207,6 +222,11 @@ function setupMenuButtons() {
         case 'free-ride':
           hud.startGame();
           break;
+        case 'lines': {
+          const panel = document.getElementById('lines-panel');
+          if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+          break;
+        }
         case 'doors':
           bus.toggleDoors();
           playDoors(bus.doorsOpen);
@@ -286,6 +306,10 @@ function animate(time: number) {
   }
   if (input.horn) playHorn();
   if (input.reset) window.location.reload();
+  if (input.timeOfDay) {
+    scene.userData.timeOfDay = scene.userData.timeOfDay === 'night' ? 'day' : 'night';
+    console.info('[time]', scene.userData.timeOfDay);
+  }
   updateEngine(Math.min(1, bus.getSpeedKmh() / 90), input.throttle > 0 ? 1 : 0);
   clearFrameFlags();
 

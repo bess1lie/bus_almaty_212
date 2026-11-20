@@ -45,6 +45,9 @@ function onKeyDown(e: KeyboardEvent) {
       break;
     case 'KeyS':
     case 'ArrowDown':
+      kbd.brake = 1;
+      break;
+    case 'KeyQ':
       kbd.throttle = -1;
       break;
     case 'KeyA':
@@ -85,6 +88,9 @@ function onKeyUp(e: KeyboardEvent) {
       break;
     case 'KeyS':
     case 'ArrowDown':
+      kbd.brake = 0;
+      break;
+    case 'KeyQ':
       if (kbd.throttle < 0) kbd.throttle = 0;
       break;
     case 'KeyA':

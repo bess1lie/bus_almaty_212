@@ -12,6 +12,8 @@ import { Bus } from '../vehicle/bus';
 import { CityWorld } from '../world/cityWorld';
 import { OsmTileProvider } from '../world/osmTileProvider';
 import { createEnvironment } from '../world/environment';
+import { createStreetProps } from '../world/streetProps';
+import { makeStreetTileProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
 
 const FIXED_DT = 1 / 60;
@@ -23,6 +25,7 @@ let renderer: THREE.WebGLRenderer;
 let clock: THREE.Clock;
 let bus: Bus;
 let cityWorld: CityWorld;
+let streetProps: ReturnType<typeof createStreetProps>;
 let hud: HUD;
 
 let accumulator = 0;
@@ -97,9 +100,12 @@ async function main() {
     { onTileError: (x, z, e) => console.error(`[CityWorld] тайл ${x}_${z}:`, e) }
   );
 
+  // Уличные объекты (деревья, фонари, разметка, остановки)
+  streetProps = createStreetProps(scene, makeStreetTileProvider(cityWorld));
+
   // 4. Автобус — стартуем без ожидания GLB
   setLoading('Посадка за руль...', loadingTextEl);
-  bus = new Bus(scene);
+  bus = new Bus(scene, camera);
   bus.setCameraMode('chase');
   const modelUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;
   const modelPromise = bus.loadModel(modelUrl, camera);
@@ -267,6 +273,11 @@ function animate(time: number) {
   const vel = bus.getLinearVelocity();
   const fwd = bus.getForward();
   cityWorld.update({ position: pos, velocity: vel, forward: fwd, deltaSeconds: frameDt });
+
+  // Камера для уличных объектов (мировая позиция)
+  const activeCamTmp = currentMode === 'driver' ? camera : chaseCam;
+  activeCamTmp.updateMatrixWorld();
+  streetProps.update(activeCamTmp.getWorldPosition(new THREE.Vector3()));
 
   if (time - lastHudTime >= 100) {
     hud.update(bus.getSpeedKmh(), bus.getGear());

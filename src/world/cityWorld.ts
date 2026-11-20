@@ -95,6 +95,11 @@ export class CityWorld {
 
   get loadedTileCount() { return this.tiles.size; }
 
+  /** Список загруженных тайлов: [tileX, tileZ]. */
+  getLoadedTiles(): Array<[number, number]> {
+    return [...this.tiles.values()].map((t) => [t.x, t.z]);
+  }
+
   update(frame: CityWorldFrame) {
     if (this.disposed) return;
     this.camera.updateMatrixWorld();

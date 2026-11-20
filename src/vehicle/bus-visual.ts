@@ -76,11 +76,13 @@ export async function createBusVisual(
   pitchRig.name = 'camera_pitch_rig';
 
   camera.removeFromParent();
-  camera.position.set(0, 0, 0);
+  // Камера водителя: чуть выше и чуть вперёд от точки camera_driver,
+  // чтобы руль и торпедо не занимали весь экран.
+  camera.position.set(0, -0.25, 0.35);
   camera.rotation.set(0, 0, 0);
   camera.up.set(0, 1, 0);
-  camera.near = 0.04;
-  camera.far = options.cameraFar ?? 500;
+  camera.near = 0.05;
+  camera.far = options.cameraFar ?? 3000;
   camera.updateProjectionMatrix();
 
   cameraDriver.add(yawRig);

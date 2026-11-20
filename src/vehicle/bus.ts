@@ -1,6 +1,6 @@
 /**
- * bus.ts — автобус: физика Rapier + визуальная GLTF-модель (bus-visual.ts).
- * Если GLB не загрузился — процедурный fallback.
+ * bus.ts — автобус: стабильная аркадная физика + визуальная GLTF-модель.
+ * Плавный разгон, инерция руля, визуальный крен, FOV-эффект.
  */
 
 import * as THREE from 'three';
@@ -12,60 +12,67 @@ import { createBusVisual, BusVisual } from './bus-visual';
 
 const BUS_LENGTH = 12;
 const BUS_WIDTH = 2.5;
-const BODY_HALF_HEIGHT = 1.525; // центр масс, чтобы шины касались Y=0
+const BODY_H = 3.05;
+const BODY_HALF = BODY_H / 2;
 
-const MAX_SPEED = 25; // м/с (~90 км/ч)
-const MAX_STEER = 0.35;
+const MAX_SPEED = 22;      // м/с (~80 км/ч)
+const ACCEL = 4.5;         // м/с² — плавный разгон
+const BRAKE = 9;           // м/с²
+const REVERSE_MAX = 6;     // м/с (~22 км/ч)
+const DRAG = 1.4;          // сопротивление
+const MAX_STEER = 0.42;    // рад (~24°)
 
 export type CameraMode = 'driver' | 'chase';
 
 export class Bus {
-  /** Физическое тело Rapier. */
   readonly body: RigidBody;
-
   private readonly scene: THREE.Scene;
   private readonly rapi: typeof RAPIER;
 
   private visual: BusVisual | null = null;
   private fallback: THREE.Group | null = null;
+  private fallbackWheels: THREE.Mesh[] = [];
 
   private cameraMode: CameraMode = 'driver';
+  private camera: THREE.PerspectiveCamera;
   doorsOpen = false;
-  private speed = 0;
-  private steerAngle = 0;
 
-  constructor(scene: THREE.Scene) {
+  private speed = 0;         // м/с, со знаком
+  private steer = 0;         // текущий угол руля
+  private visualRoll = 0;    // визуальный крен
+  private visualPitch = 0;   // визуальный наклон при торможении
+  private lookYaw = 0;
+  private lookPitch = 0;
+
+  constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
     this.scene = scene;
+    this.camera = camera;
     this.rapi = getRapier();
-
+    const RAPIER = this.rapi;
     const world = getPhysicsWorld();
+
+    // Физическое тело: только поворот вокруг Y, без крена (стабильно)
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setLinearDamping(0.3)
-      .setAngularDamping(2.0)
-      // автобус не должен кувыркаться — только поворот вокруг вертикальной оси
+      .setLinearDamping(0.0)
+      .setAngularDamping(4.0)
       .enabledRotations(false, true, false);
     this.body = world.createRigidBody(bodyDesc);
 
-    // Центр масс = центр кузова. Пол пола на Y=0, поэтому ставим тело на BODY_HALF_HEIGHT.
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(
-      BUS_LENGTH / 2,
-      BODY_HALF_HEIGHT,
-      BUS_WIDTH / 2
-    );
-    colliderDesc.setMass(13000); // 13 тонн
-    colliderDesc.setFriction(1.2);
+    const colliderDesc = RAPIER.ColliderDesc.cuboid(BUS_LENGTH / 2, BODY_HALF, BUS_WIDTH / 2);
+    colliderDesc.setMass(12000);
+    colliderDesc.setFriction(0.5);
     world.createCollider(colliderDesc, this.body);
 
-    this.body.setTranslation({ x: 0, y: BODY_HALF_HEIGHT + 0.1, z: 0 }, true);
+    this.body.setTranslation({ x: 0, y: BODY_HALF + 0.02, z: 0 }, true);
     this.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+    this.body.setEnabledTranslations(true, false, true, true); // Y зафиксирован
 
     this.buildFallback();
   }
 
-  /** Загружает GLTF-модель. Возвращает true при успехе. */
-  async loadModel(modelUrl: string, camera: THREE.PerspectiveCamera): Promise<boolean> {
+  async loadModel(modelUrl: string, cam: THREE.PerspectiveCamera): Promise<boolean> {
     try {
-      this.visual = await createBusVisual(this.scene, camera, modelUrl, { enableShadows: true });
+      this.visual = await createBusVisual(this.scene, cam, modelUrl, { enableShadows: true });
       if (this.fallback) {
         this.scene.remove(this.fallback);
         this.disposeObject(this.fallback);
@@ -73,95 +80,74 @@ export class Bus {
       }
       return true;
     } catch (err) {
-      console.warn('[bus] Не удалось загрузить GLB, использую процедурную модель.', err);
+      console.warn('[bus] GLB не загружен, fallback.', err);
       this.visual = null;
       return false;
     }
   }
 
-  // ---------- Fallback (если GLB недоступен) ----------
   private buildFallback() {
     const group = new THREE.Group();
-
-    const bodyGeo = new THREE.BoxGeometry(BUS_LENGTH, 3.05, BUS_WIDTH);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x1a5f7a,
-      roughness: 0.5,
-      metalness: 0.3,
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(BUS_LENGTH, BODY_H, BUS_WIDTH),
+      new THREE.MeshStandardMaterial({ color: 0x1a5f7a })
+    );
     body.position.y = 0;
-    body.castShadow = true;
     group.add(body);
-
-    const wheelGeo = new THREE.CylinderGeometry(0.425, 0.425, 0.8, 16);
-    wheelGeo.rotateZ(Math.PI / 2);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const wg = new THREE.CylinderGeometry(0.55, 0.55, 0.4, 12);
+    wg.rotateZ(Math.PI / 2);
+    const wm = new THREE.MeshStandardMaterial({ color: 0x111 });
     const positions: [number, number][] = [
-      [-BUS_WIDTH / 2, -BUS_LENGTH / 2 + 1.4],
-      [BUS_WIDTH / 2, -BUS_LENGTH / 2 + 1.4],
-      [-BUS_WIDTH / 2, BUS_LENGTH / 2 - 1.4],
-      [BUS_WIDTH / 2, BUS_LENGTH / 2 - 1.4],
+      [-BUS_WIDTH / 2, -4.4], [BUS_WIDTH / 2, -4.4],
+      [-BUS_WIDTH / 2, 4.4], [BUS_WIDTH / 2, 4.4],
     ];
     for (const [x, z] of positions) {
-      const w = new THREE.Mesh(wheelGeo, wheelMat);
-      w.position.set(x, -BODY_HALF_HEIGHT + 0.425, z);
-      w.castShadow = true;
+      const w = new THREE.Mesh(wg, wm);
+      w.position.set(x, -BODY_HALF + 0.55, z);
       group.add(w);
+      this.fallbackWheels.push(w);
     }
-
     this.fallback = group;
     this.scene.add(group);
   }
 
-  // ---------- Управление состоянием ----------
-  setCameraMode(mode: CameraMode) {
-    this.cameraMode = mode;
-  }
-  getCameraMode(): CameraMode {
-    return this.cameraMode;
-  }
-
+  setCameraMode(mode: CameraMode) { this.cameraMode = mode; }
+  getCameraMode(): CameraMode { return this.cameraMode; }
   toggleDoors() {
     this.doorsOpen = !this.doorsOpen;
     this.visual?.setDoorsOpen(this.doorsOpen);
   }
-
-  setDoors(open: boolean) {
-    if (this.doorsOpen === open) return;
-    this.doorsOpen = open;
-    this.visual?.setDoorsOpen(open);
-  }
-
-  /** Камера кабины: взгляд мышью/тачем. */
   setLook(yaw: number, pitch: number) {
+    this.lookYaw = yaw;
+    this.lookPitch = pitch;
     this.visual?.setLook(yaw, pitch);
   }
 
-  // ---------- Кадр ----------
-  /** Только физика. Вызывается внутри fixed-step цикла до world.step(). */
+  /** ДО world.step(), фиксированный шаг. */
   update(dt: number, input: Readonly<InputState>) {
-    const accel = 8;
-    const brakeDecel = 15;
-    const drag = 1.2;
-
-    if (input.throttle > 0 && this.speed < MAX_SPEED) this.speed += accel * dt * input.throttle;
-    if (input.throttle < 0 && this.speed > -MAX_SPEED * 0.4) this.speed -= accel * dt * Math.abs(input.throttle);
-    if (input.brake > 0 || input.handbrake) {
-      const decel = input.handbrake ? brakeDecel * 2 : brakeDecel;
-      if (this.speed > 0) this.speed = Math.max(0, this.speed - decel * dt);
-      if (this.speed < 0) this.speed = Math.min(0, this.speed + decel * dt);
+    // --- Скорость с плавной инерцией ---
+    const braking = input.brake > 0 || input.handbrake;
+    if (braking) {
+      const dec = input.handbrake ? BRAKE * 1.8 : BRAKE;
+      if (this.speed > 0) this.speed = Math.max(0, this.speed - dec * dt);
+      if (this.speed < 0) this.speed = Math.min(0, this.speed + dec * dt);
+    } else if (input.throttle > 0) {
+      this.speed = Math.min(MAX_SPEED, this.speed + ACCEL * dt);
+    } else if (input.throttle < 0) {
+      this.speed = Math.max(-REVERSE_MAX, this.speed - ACCEL * 0.7 * dt);
+    } else {
+      // выбег
+      const sign = Math.sign(this.speed);
+      this.speed -= sign * DRAG * dt;
+      if (Math.abs(this.speed) < 0.08) this.speed = 0;
     }
-    if (Math.abs(input.throttle) < 0.01 && input.brake === 0 && !input.handbrake) {
-      const sign = Math.sign(this.speed) || 1;
-      this.speed -= sign * drag * dt;
-      if (Math.abs(this.speed) < 0.05) this.speed = 0;
-    }
 
+    // --- Руль: плавный, чувствительность падает с скоростью ---
     const speedFactor = Math.max(0.3, 1 - Math.abs(this.speed) / MAX_SPEED);
     const targetSteer = input.steering * MAX_STEER * speedFactor;
-    this.steerAngle += (targetSteer - this.steerAngle) * dt * 5;
+    this.steer += (targetSteer - this.steer) * Math.min(1, dt * 4);
 
+    // --- Применяем к телу ---
     const rot = this.body.rotation();
     const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
@@ -169,66 +155,70 @@ export class Bus {
     if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
     forward.normalize();
 
-    // Жёсткая стабилизация: автобус всегда стоит на земле, без крена/полёта.
-    const pos = this.body.translation();
-    this.body.setTranslation({ x: pos.x, y: BODY_HALF_HEIGHT, z: pos.z }, true);
     this.body.setLinvel(
       { x: forward.x * this.speed, y: 0, z: forward.z * this.speed },
       true
     );
+    // Поворот: минус, т.к. перед по -Z; знак скорости для заднего хода
+    const turn = -this.steer * Math.sign(this.speed || 1) *
+      Math.min(1, Math.abs(this.speed) / 3) * 1.6;
+    this.body.setAngvel({ x: 0, y: turn, z: 0 }, true);
 
-    // Поворот вокруг Y — минус и знак скорости (перед автобуса по -Z)
-    const turnRate =
-      -this.steerAngle * Math.sign(this.speed || 1) *
-      Math.min(1, Math.abs(this.speed) / 4) * 1.8;
-    this.body.setAngvel({ x: 0, y: turnRate, z: 0 }, true);
+    // Визуальный крен/наклон (только меш, не физика)
+    const targetRoll = -this.steer * Math.min(1, Math.abs(this.speed) / 8) * 0.05;
+    const targetPitch = braking ? 0.025 : (input.throttle > 0 ? -0.015 : 0);
+    this.visualRoll += (targetRoll - this.visualRoll) * Math.min(1, dt * 3);
+    this.visualPitch += (targetPitch - this.visualPitch) * Math.min(1, dt * 3);
   }
 
-  /** Синхронизация визуала и камеры — ПОСЛЕ world.step(). */
+  /** ПОСЛЕ world.step(). */
   syncVisual(dt: number, steering: number, chaseCam: THREE.PerspectiveCamera) {
     const pos = this.body.translation();
     const rot = this.body.rotation();
     const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
 
+    // Визуальный наклон поверх физического поворота
+    const tilt = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(this.visualPitch, 0, this.visualRoll, 'YXZ')
+    );
+    const visualQ = q.clone().multiply(tilt);
+
     if (this.visual) {
       this.visual.updateFromPhysics(dt, this.body, steering);
+      // Наклон применяем к корню модели
+      this.visual.root.quaternion.copy(visualQ);
     } else if (this.fallback) {
       this.fallback.position.set(pos.x, pos.y, pos.z);
-      this.fallback.quaternion.copy(q);
+      this.fallback.quaternion.copy(visualQ);
+      const spin = (this.speed / 0.55) * dt;
+      for (const w of this.fallbackWheels) w.rotation.x += spin;
     }
+
+    // FOV при разгоне (эффект скорости)
+    const targetFov = 70 + Math.min(14, Math.abs(this.speed) * 0.6);
+    this.camera.fov += (targetFov - this.camera.fov) * Math.min(1, dt * 3);
+    this.camera.updateProjectionMatrix();
 
     if (this.cameraMode === 'chase') {
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
       forward.y = 0;
       forward.normalize();
-      const camPos = new THREE.Vector3(
-        pos.x - forward.x * 9,
-        pos.y + 3.2,
-        pos.z - forward.z * 9
-      );
+      const camPos = new THREE.Vector3(pos.x - forward.x * 10, pos.y + 3.5, pos.z - forward.z * 10);
       chaseCam.position.lerp(camPos, Math.min(1, dt * 8));
-      chaseCam.lookAt(pos.x + forward.x * 15, pos.y + 1, pos.z + forward.z * 15);
+      chaseCam.lookAt(pos.x + forward.x * 15, pos.y + 1.2, pos.z + forward.z * 15);
     }
   }
 
   getPosition(): THREE.Vector3 {
-    const pos = this.body.translation();
-    return new THREE.Vector3(pos.x, pos.y, pos.z);
+    const p = this.body.translation();
+    return new THREE.Vector3(p.x, p.y, p.z);
   }
-
-  getSpeedKmh(): number {
-    return Math.abs(this.speed) * 3.6;
-  }
-
-  getGear(): string {
-    return this.speed < -0.1 ? 'R' : 'D';
-  }
-
+  getSpeedKmh(): number { return Math.abs(this.speed) * 3.6; }
+  getGear(): string { return this.speed < -0.2 ? 'R' : 'D'; }
   getLinearVelocity(): THREE.Vector3 {
     const v = this.body.linvel();
     return new THREE.Vector3(v.x, v.y, v.z);
   }
-
   getForward(): THREE.Vector3 {
     const rot = this.body.rotation();
     const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);

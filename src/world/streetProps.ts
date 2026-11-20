@@ -54,9 +54,15 @@ export interface StreetTileKeyProvider {
   getTileData?: (key: string) => StreetTileDescriptor | undefined;
 }
 
+export interface StreetPropsOptions {
+  /** Корневой объект bus_root. */
+  busRoot?: THREE.Object3D;
+}
+
 export interface StreetPropsController {
   update(cameraPos: THREE.Vector3): void;
   dispose(): void;
+  getStats(): { tiles: number; trees: number; lamps: number; sidewalks: number; lines: number; stops: number };
 }
 
 const TILE_SIZE = 2000;
@@ -393,6 +399,7 @@ function urlForPublicAsset(path: string): string {
 export function createStreetProps(
   scene: THREE.Scene,
   getTileKeys: StreetTileKeyProvider,
+  options: StreetPropsOptions = {},
 ): StreetPropsController {
   const gridOrigin = getGridOrigin(scene);
   const loader = new GLTFLoader();
@@ -1062,5 +1069,16 @@ export function createStreetProps(
     if (!disposed) console.error('[streetProps] Failed to load bus stop GLB models:', error);
   });
 
-  return { update, dispose };
+  function getStats() {
+    return {
+      tiles: Array.from(getTileKeys()).length,
+      trees: treeTrunks?.count ?? 0,
+      lamps: lampPoles?.count ?? 0,
+      sidewalks: sidewalks?.count ?? 0,
+      lines: roadLines?.geometry?.getAttribute('position')?.count ?? 0,
+      stops: allStops.length,
+    };
+  }
+
+  return { update, dispose, getStats };
 }

@@ -7,6 +7,7 @@ export type CityBuilding = {
   h: number;          // высота, м
   type: string;       // building:* или эвристический тип
   est: boolean;       // рост не из OSM
+  levels?: number;    // этажность из OSM building:levels
   c?: [number, number];
 };
 

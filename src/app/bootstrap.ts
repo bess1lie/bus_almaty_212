@@ -12,6 +12,7 @@ import { Bus } from '../vehicle/bus';
 import { CityWorld } from '../world/cityWorld';
 import { OsmTileProvider } from '../world/osmTileProvider';
 import { createEnvironment } from '../world/environment';
+import { createAtmosphere } from '../world/atmosphere';
 import { createStreetProps } from '../world/streetProps';
 import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
@@ -27,13 +28,15 @@ let bus: Bus;
 let cityWorld: CityWorld;
 let streetProps: ReturnType<typeof createStreetProps>;
 let streetMetadata: StreetMetadataProvider;
+let atmosphere: ReturnType<typeof createAtmosphere>;
 let hud: HUD;
 
 let accumulator = 0;
 let lastHudTime = 0;
+let lastStreetReport = 0;
 let currentMode: 'driver' | 'chase' = 'chase';
 let lookYaw = 0;
-let lookPitch = 0;
+let lookPitch = 0.12; // чуть вверх — видно небо и горы, а не только торпедо
 
 // Тач-зоны
 let touchSteer = 0;
@@ -85,6 +88,7 @@ async function main() {
   scene.add(sun);
 
   createEnvironment(scene);
+  atmosphere = createAtmosphere(scene, chaseCam);
 
   // 2. Физика
   setLoading('Инициализация физики...', loadingTextEl);
@@ -142,6 +146,7 @@ async function main() {
     if (loaded) {
       currentMode = 'driver';
       bus.setCameraMode('driver');
+      bus.setLook(lookYaw, lookPitch);
       console.info('[bus] Модель загружена, кабина активна');
     } else {
       console.warn('[bus] GLB не загружен — внешняя камера');
@@ -287,10 +292,17 @@ function animate(time: number) {
   const activeCamTmp = currentMode === 'driver' ? camera : chaseCam;
   activeCamTmp.updateMatrixWorld();
   streetProps.update(activeCamTmp.getWorldPosition(new THREE.Vector3()));
+  scene.userData.busPosition = pos;
+  scene.userData.busQuaternion = bus.body.rotation();
+  atmosphere.update(frameDt, activeCamTmp);
 
   if (time - lastHudTime >= 100) {
     hud.update(bus.getSpeedKmh(), bus.getGear());
     lastHudTime = time;
+  }
+  if (time - lastStreetReport >= 5000) {
+    console.info('[streetProps]', streetProps.getStats(), 'city:', cityWorld.getStats());
+    lastStreetReport = time;
   }
 
   const activeCam = currentMode === 'driver' ? camera : chaseCam;

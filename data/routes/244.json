@@ -78,8 +78,9 @@
           "sequence": 8,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "По требованию",
@@ -87,8 +88,9 @@
           "sequence": 9,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "Карасай батыра / Байгазиева",
@@ -105,8 +107,9 @@
           "sequence": 11,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Улица Кунаева",
@@ -132,8 +135,9 @@
           "sequence": 14,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Село Долан",
@@ -159,8 +163,9 @@
           "sequence": 17,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Улица Суюнбая",
@@ -238,19 +243,25 @@
           "name_ru": "КГ Елисейские поля",
           "name_kz": null,
           "sequence": 26,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2157406,
+          "lon": 76.7904869,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "14166421610",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Микрорайон Шугыла",
           "name_kz": null,
           "sequence": 27,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.213913,
+          "lon": 76.7878678,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "9408249938",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "ЖК Шугыла",
@@ -258,8 +269,9 @@
           "sequence": 28,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "По требованию",
@@ -267,8 +279,9 @@
           "sequence": 29,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "ЦОН",
@@ -276,8 +289,9 @@
           "sequence": 30,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 16
         },
         {
           "name_ru": "По требованию",
@@ -285,8 +299,9 @@
           "sequence": 31,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "НИШ",
@@ -294,8 +309,9 @@
           "sequence": 32,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Улица Аспандиярова",
@@ -321,8 +337,9 @@
           "sequence": 35,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Станция метро Бауыржана Момышулы, конечная",
@@ -355,8 +372,9 @@
           "sequence": 2,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Улица Косынова",
@@ -382,8 +400,9 @@
           "sequence": 5,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "По требованию",
@@ -391,8 +410,9 @@
           "sequence": 6,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "Административный центр Наурызбайского района",
@@ -409,8 +429,9 @@
           "sequence": 8,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 3
         },
         {
           "name_ru": "По требованию",
@@ -418,8 +439,9 @@
           "sequence": 9,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "Нурлы / Сабденова",
@@ -434,10 +456,13 @@
           "name_ru": "КГ Елисейские поля",
           "name_kz": null,
           "sequence": 11,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2157406,
+          "lon": 76.7904869,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "14166421610",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "ЖК Alma City",
@@ -508,8 +533,9 @@
           "sequence": 19,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Село Кумтоган",
@@ -544,8 +570,9 @@
           "sequence": 23,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Город Каскелен",
@@ -571,8 +598,9 @@
           "sequence": 26,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Улица Барибаева",
@@ -677,7 +705,16 @@
     "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
     "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
     "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
-    "route_244_update_note": "Конечная Кайнар отражает опубликованное продление от 2026-07-01. Полная платформа остановки Кайнар и точные координаты не подтверждены."
+    "route_244_update_note": "Конечная Кайнар отражает опубликованное продление от 2026-07-01. Полная платформа остановки Кайнар и точные координаты не подтверждены.",
+    "osm_coordinate_enrichment": {
+      "checked_at": "2026-11-20T21:22:05.565Z",
+      "source": "public/map/v1/stops-index.json",
+      "matching": "exact normalized route stop name against OSM name:ru/name:kk/name; unique OSM element only",
+      "updated": 3,
+      "ambiguous": 19,
+      "unmatched": 50,
+      "note": "No geocoding or street-centroid fallback. Ambiguous and unmatched route coordinates remain null."
+    }
   },
   "operational_notes": [
     {

@@ -63,6 +63,7 @@ export class Bus {
     colliderDesc.setFriction(0.5);
     world.createCollider(colliderDesc, this.body);
 
+    // Старт на реальной улице с открытым видом вперёд (проспект, 1.5 км восточнее центра)
     this.body.setTranslation({ x: 0, y: BODY_HALF + 0.02, z: 0 }, true);
     this.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
     this.body.setEnabledTranslations(true, false, true, true); // Y зафиксирован
@@ -166,7 +167,8 @@ export class Bus {
 
     // Визуальный крен/наклон (только меш, не физика)
     const targetRoll = -this.steer * Math.min(1, Math.abs(this.speed) / 8) * 0.05;
-    const targetPitch = braking ? 0.025 : (input.throttle > 0 ? -0.015 : 0);
+    // Тормоз → нос вниз (pitch < 0); разгон → нос вверх (pitch > 0).
+    const targetPitch = braking ? -0.03 : (input.throttle > 0 ? 0.02 : 0);
     this.visualRoll += (targetRoll - this.visualRoll) * Math.min(1, dt * 3);
     this.visualPitch += (targetPitch - this.visualPitch) * Math.min(1, dt * 3);
   }

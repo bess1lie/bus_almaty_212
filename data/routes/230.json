@@ -51,8 +51,9 @@
           "sequence": 5,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "По требованию",
@@ -60,8 +61,9 @@
           "sequence": 6,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 57
         },
         {
           "name_ru": "Карасай батыра / Байгазиева",
@@ -78,8 +80,9 @@
           "sequence": 8,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Алтын Аул",
@@ -114,8 +117,9 @@
           "sequence": 12,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Мечеть",
@@ -123,8 +127,9 @@
           "sequence": 13,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 18
         },
         {
           "name_ru": "Улица Суюнбая",
@@ -150,8 +155,9 @@
           "sequence": 16,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 3
         },
         {
           "name_ru": "Микрорайон Тулпар",
@@ -159,8 +165,9 @@
           "sequence": 17,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Городская клиническая больница №7",
@@ -168,8 +175,9 @@
           "sequence": 18,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Рынок Жибек Жолы",
@@ -195,8 +203,9 @@
           "sequence": 21,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Улица Момышулы",
@@ -213,8 +222,9 @@
           "sequence": 23,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 13
         },
         {
           "name_ru": "Улица Саина",
@@ -222,8 +232,9 @@
           "sequence": 24,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Улица Саина",
@@ -231,8 +242,9 @@
           "sequence": 25,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Микрорайон Аксай-1, конечная",
@@ -263,10 +275,13 @@
           "name_ru": "Микрорайон Аксай-3",
           "name_kz": "«Ақсай-3» ықшам ауданы",
           "sequence": 2,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2384887,
+          "lon": 76.8296615,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "1980833374",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Момышулы",
@@ -274,8 +289,9 @@
           "sequence": 3,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 13
         },
         {
           "name_ru": "Яссауи",
@@ -283,8 +299,9 @@
           "sequence": 4,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 4
         },
         {
           "name_ru": "Оптовый магазин Арзан",
@@ -328,8 +345,9 @@
           "sequence": 9,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "ТЦ Апорт",
@@ -337,8 +355,9 @@
           "sequence": 10,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 3
         },
         {
           "name_ru": "Рынок Алтын Орда",
@@ -364,8 +383,9 @@
           "sequence": 13,
           "lat": null,
           "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "coordinate_status": "ambiguous_osm_name",
+          "terminal": false,
+          "coordinate_candidates": 2
         },
         {
           "name_ru": "Город Каскелен",
@@ -431,7 +451,16 @@
     "coordinates": "unconfirmed_null",
     "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
     "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
-    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика."
+    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
+    "osm_coordinate_enrichment": {
+      "checked_at": "2026-11-20T21:22:05.565Z",
+      "source": "public/map/v1/stops-index.json",
+      "matching": "exact normalized route stop name against OSM name:ru/name:kk/name; unique OSM element only",
+      "updated": 1,
+      "ambiguous": 17,
+      "unmatched": 27,
+      "note": "No geocoding or street-centroid fallback. Ambiguous and unmatched route coordinates remain null."
+    }
   },
   "operational_notes": [],
   "sources": [

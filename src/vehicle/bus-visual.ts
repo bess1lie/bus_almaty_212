@@ -8,6 +8,18 @@ const MAX_STEERING_WHEEL_RAD = 2.45;
 const DOOR_TRAVEL = 0.30;
 const DOOR_DAMPING = 8.0;
 
+// Камера водителя относительно camera_driver.
+const CAMERA_MOUNT_Y = -0.52;
+const CAMERA_MOUNT_Z = 0.35;
+
+// Положение руля относительно bus_root.
+const STEERING_WHEEL_TARGET_Y = -0.21;
+const STEERING_WHEEL_SCALE = 0.82;
+
+// Лёгкий наклон камеры при поворотах.
+const MAX_CAMERA_ROLL = THREE.MathUtils.degToRad(2);
+const CAMERA_ROLL_DAMPING = 7.5;
+
 export type BusVisualOptions = {
   /** Включает тени на всех Mesh. Для мобильной версии отключайте при необходимости. */
   enableShadows?: boolean;
@@ -68,31 +80,38 @@ export async function createBusVisual(
     }
   });
 
-  // Отдельные узлы yaw/pitch позволяют подключить мышь или touch без
-  // изменения трансформации самой камеры.
   const yawRig = new THREE.Group();
   yawRig.name = 'camera_yaw_rig';
   const pitchRig = new THREE.Group();
   pitchRig.name = 'camera_pitch_rig';
+  const cameraMount = new THREE.Group();
+  cameraMount.name = 'camera_mount';
+  cameraMount.position.set(0, CAMERA_MOUNT_Y, CAMERA_MOUNT_Z);
+  const rollRig = new THREE.Group();
+  rollRig.name = 'camera_roll_rig';
 
   camera.removeFromParent();
-  // Камера водителя: чуть выше и чуть вперёд от точки camera_driver,
-  // чтобы руль и торпедо не занимали весь экран.
-  camera.position.set(0, -0.25, 0.35);
+  camera.position.set(0, 0, 0);
   camera.rotation.set(0, 0, 0);
   camera.up.set(0, 1, 0);
-  camera.near = 0.05;
-  camera.far = options.cameraFar ?? 3000;
+  camera.near = 0.04;
+  camera.far = options.cameraFar ?? 500;
   camera.updateProjectionMatrix();
 
   cameraDriver.add(yawRig);
   yawRig.add(pitchRig);
-  pitchRig.add(camera);
+  pitchRig.add(cameraMount);
+  cameraMount.add(rollRig);
+  rollRig.add(camera);
 
   scene.add(gltf.scene);
 
   try {
-    return new BusVisual(gltf.scene, busRoot, yawRig, pitchRig);
+    const visual = new BusVisual(gltf.scene, busRoot, yawRig, pitchRig, rollRig);
+    scene.userData.busRoot = busRoot;
+    scene.userData.busPosition = busRoot.position;
+    scene.userData.busQuaternion = busRoot.quaternion;
+    return visual;
   } catch (error) {
     gltf.scene.removeFromParent();
     camera.removeFromParent();
@@ -110,6 +129,8 @@ export class BusVisual {
 
   private readonly yawRig: THREE.Group;
   private readonly pitchRig: THREE.Group;
+  private readonly rollRig: THREE.Group;
+  private cameraRoll = 0;
   private readonly steeringWheel: THREE.Object3D;
   private readonly wheels: WheelBinding[];
   private readonly doorLeaves: DoorLeafBinding[];
@@ -124,18 +145,19 @@ export class BusVisual {
     root: THREE.Object3D,
     yawRig: THREE.Group,
     pitchRig: THREE.Group,
+    rollRig: THREE.Group,
   ) {
     this.sceneObject = sceneObject;
     this.root = root;
     this.yawRig = yawRig;
     this.pitchRig = pitchRig;
+    this.rollRig = rollRig;
 
     this.steeringWheel = requiredObject(root, 'steering_wheel');
+    // Координата задаётся непосредственно в локальной системе bus_root.
+    this.steeringWheel.position.y = STEERING_WHEEL_TARGET_Y;
+    this.steeringWheel.scale.setScalar(STEERING_WHEEL_SCALE);
     this.steeringWheelRestZ = this.steeringWheel.rotation.z;
-    // Поднимаем руль, чтобы он читался в кабине (иначе уходит за низ экрана).
-    this.steeringWheel.position.y += 0.42;
-    this.steeringWheel.position.z += 0.12;
-    this.steeringWheel.scale.setScalar(0.7);
     this.mirrorCamLeft = requiredObject(root, 'mirror_cam_left');
     this.mirrorCamRight = requiredObject(root, 'mirror_cam_right');
     this.doorHingeLeft = requiredObject(root, 'door_hinge_left');
@@ -252,6 +274,15 @@ export class BusVisual {
       .normalize();
 
     const signedForwardSpeed = this.velocity.dot(this.forward);
+
+    // Наклон камеры зависит от скорости и поворота.
+    const rollSpeedFactor = THREE.MathUtils.clamp(this.velocity.length() / 10, 0, 1);
+    const targetRoll = -steer * MAX_CAMERA_ROLL * rollSpeedFactor;
+    this.cameraRoll = THREE.MathUtils.damp(
+      this.cameraRoll, targetRoll, CAMERA_ROLL_DAMPING, Math.min(dt, 0.1)
+    );
+    this.rollRig.rotation.z = this.cameraRoll;
+
     const wheelDelta = -(signedForwardSpeed * dt) / WHEEL_RADIUS;
     for (const wheel of this.wheels) {
       wheel.spin.rotation.x += wheelDelta;
@@ -276,6 +307,12 @@ export class BusVisual {
 
   /** Удаляет модель из сцены. Геометрию/материалы освобождайте при полном закрытии игры. */
   removeFromScene(): void {
+    const parent = this.sceneObject.parent;
+    if (parent && parent.userData.busRoot === this.root) {
+      delete parent.userData.busRoot;
+      delete parent.userData.busPosition;
+      delete parent.userData.busQuaternion;
+    }
     this.sceneObject.removeFromParent();
   }
 }

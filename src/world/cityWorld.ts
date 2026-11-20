@@ -1,9 +1,7 @@
 /**
- * cityWorld.ts — потоковая загрузка города (надёжная версия на InstancedMesh).
- * Работает без WEBGL_multi_draw: здания рисуются одним InstancedMesh на тайл.
- * LOD: детальные здания <300м, кубы 300-1500м, скрытие >1500м.
- * Frustum: тайлы вне вида камеры скрываются (но НЕ выгружаются).
- * Prefetch: коридор вперёд по вектору скорости.
+ * cityWorld.ts — потоковая загрузка города.
+ * Здания с процедурными фасадами (BuildingSource.geometry), LOD 300/1500м,
+ * frustum-отсечение тайлов и prefetch по вектору скорости.
  */
 
 import * as THREE from 'three';
@@ -12,6 +10,7 @@ import type { World as RapierWorld } from '@dimforge/rapier3d-compat';
 export const CITY_TILE_SIZE = 2000;
 export const CITY_DETAIL_DISTANCE = 300;
 export const CITY_HIDDEN_DISTANCE = 1500;
+export const CITY_MAX_TILE_TRIANGLES = 30_000;
 
 export interface BuildingSource {
   position: THREE.Vector3;
@@ -29,6 +28,7 @@ export interface CityTilePayload {
 
 export interface CityTileProvider {
   loadTile(tileX: number, tileZ: number): Promise<CityTilePayload>;
+  dispose?(): void;
 }
 
 export interface CityWorldFrame {
@@ -47,8 +47,8 @@ export interface CityWorldOptions {
 
 interface BuildingRuntime {
   source: BuildingSource;
-  center: THREE.Vector3; // world
-  visible: boolean;
+  center: THREE.Vector3;
+  geometry: THREE.BufferGeometry | null;
 }
 
 interface TileRuntime {
@@ -57,7 +57,9 @@ interface TileRuntime {
   key: string;
   root: THREE.Group;
   bounds: THREE.Box3;
-  mesh: THREE.InstancedMesh | null;
+  boxMesh: THREE.InstancedMesh | null;
+  detailMeshes: THREE.InstancedMesh[];
+  facadeGeometries: Set<THREE.BufferGeometry>;
   buildings: BuildingRuntime[];
   baseMatrices: THREE.Matrix4[];
   inFrustum: boolean;
@@ -71,17 +73,33 @@ const _c = new THREE.Color();
 const _up = new THREE.Vector3(0, 1, 0);
 const _frustum = new THREE.Frustum();
 const _pv = new THREE.Matrix4();
+const _cam = new THREE.Vector3();
+
+function countTriangles(object: THREE.Object3D | null): number {
+  if (!object) return 0;
+  let total = 0;
+  object.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh || !mesh.geometry) return;
+    const count = mesh.geometry.index?.count ?? mesh.geometry.getAttribute('position')?.count ?? 0;
+    total += Math.floor(count / 3);
+  });
+  return total;
+}
 
 export class CityWorld {
   private readonly tileSize: number;
   private readonly tiles = new Map<string, TileRuntime>();
   private readonly pending = new Set<string>();
   private readonly keep = new Set<string>();
-  private readonly material: THREE.MeshStandardMaterial;
+  private readonly boxMaterial: THREE.MeshStandardMaterial;
+  private readonly wallMaterial: THREE.MeshStandardMaterial;
+  private readonly windowMaterial: THREE.MeshStandardMaterial;
+  private readonly facadeMaterials: THREE.Material[];
   private readonly onError?: CityWorldOptions['onTileError'];
   private readonly onLoaded?: CityWorldOptions['onTileLoaded'];
   private readonly onUnloaded?: CityWorldOptions['onTileUnloaded'];
-  private readonly geom = new THREE.BoxGeometry(1, 1, 1);
+  private readonly boxGeom = new THREE.BoxGeometry(1, 1, 1);
   private streamTimer = 0;
   private disposed = false;
 
@@ -96,23 +114,37 @@ export class CityWorld {
     this.onError = options.onTileError;
     this.onLoaded = options.onTileLoaded;
     this.onUnloaded = options.onTileUnloaded;
-    this.material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 });
+    this.boxMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, vertexColors: true });
+    this.wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 });
+    this.windowMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff, vertexColors: true, roughness: 0.35,
+      emissive: 0xffb66e, emissiveIntensity: 0,
+    });
+    this.facadeMaterials = [this.wallMaterial, this.windowMaterial];
   }
 
   get loadedTileCount() { return this.tiles.size; }
-
-  /** Список загруженных тайлов: [tileX, tileZ]. */
+  getStats() {
+    let details = 0, boxes = 0;
+    for (const t of this.tiles.values()) {
+      details += t.detailMeshes.reduce((s, m) => s + m.count, 0);
+      boxes += t.boxMesh?.count ?? 0;
+    }
+    return { tiles: this.tiles.size, details, boxes };
+  }
   getLoadedTiles(): Array<[number, number]> {
     return [...this.tiles.values()].map((t) => [t.x, t.z]);
   }
 
   update(frame: CityWorldFrame) {
     if (this.disposed) return;
+
+    this.windowMaterial.emissiveIntensity = this.scene.userData.isNight === true ? 1.2 : 0;
+
     this.camera.updateMatrixWorld();
     _pv.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     _frustum.setFromProjectionMatrix(_pv);
 
-    // Frustum: скрываем тайлы вне вида, но не выгружаем
     for (const tile of this.tiles.values()) {
       tile.inFrustum = _frustum.intersectsBox(tile.bounds);
       tile.root.visible = tile.inFrustum;
@@ -126,22 +158,17 @@ export class CityWorld {
     const px = frame.position.x;
     const pz = frame.position.z;
     const speed = Math.hypot(frame.velocity.x, frame.velocity.z);
-    const aheadDist = Math.min(9000, 1500 + speed * 12);
     const ahead = new THREE.Vector3();
-    if (speed > 1) {
-      ahead.set(frame.velocity.x, 0, frame.velocity.z).normalize();
-    } else {
-      ahead.copy(frame.forward);
-    }
+    if (speed > 1) ahead.set(frame.velocity.x, 0, frame.velocity.z).normalize();
+    else ahead.copy(frame.forward);
+    const aheadDist = Math.min(9000, 1500 + speed * 12);
 
     const want = new Set<string>();
-    // 3×3 вокруг
     const tx = Math.floor(px / ts);
     const tz = Math.floor(pz / ts);
-    for (let dx = -1; dx <= 1; dx++) {
+    for (let dx = -1; dx <= 1; dx++)
       for (let dz = -1; dz <= 1; dz++) want.add(`${tx + dx}_${tz + dz}`);
-    }
-    // Коридор вперёд (отдельно от frustum!)
+
     for (let d = 1; d * ts < aheadDist; d++) {
       const cx = Math.floor((px + ahead.x * d * ts) / ts);
       const cz = Math.floor((pz + ahead.z * d * ts) / ts);
@@ -154,7 +181,6 @@ export class CityWorld {
     this.keep.clear();
     for (const k of want) this.keep.add(k);
 
-    // Загрузка (не более 2 одновременно)
     let inFlight = 0;
     for (const key of want) {
       if (this.tiles.has(key) || this.pending.has(key)) continue;
@@ -164,40 +190,17 @@ export class CityWorld {
       const [sx, sz] = key.split('_').map(Number);
       this.provider.loadTile(sx, sz)
         .then((payload) => this.addTile(sx, sz, key, payload, frame.position))
-        .catch((err) => {
-          this.onError?.(sx, sz, err);
-        })
+        .catch((err) => this.onError?.(sx, sz, err))
         .finally(() => this.pending.delete(key));
     }
 
-    // Выгрузка далёких (кроме keep)
     for (const [key, tile] of this.tiles) {
       if (this.keep.has(key)) continue;
-      const dist = Math.hypot(tile.root.position.x - px, tile.root.position.z - pz);
-      if (dist > 12000) this.removeTile(key);
+      if (Math.hypot(tile.root.position.x - px, tile.root.position.z - pz) > 12000) this.removeTile(key);
     }
 
-    // LOD зданий по расстоянию до камеры
-    this.camera.getWorldPosition(_p);
-    for (const tile of this.tiles.values()) {
-      if (!tile.mesh) continue;
-      const arr = tile.mesh.instanceMatrix.array as Float32Array;
-      for (let i = 0; i < tile.buildings.length; i++) {
-        const b = tile.buildings[i];
-        const d = Math.hypot(b.center.x - _p.x, b.center.z - _p.z);
-        const show = d <= CITY_HIDDEN_DISTANCE;
-        if (show === b.visible) continue;
-        b.visible = show;
-        const base = tile.baseMatrices[i];
-        if (show) {
-          arr.set(base.elements, i * 16);
-        } else {
-          // нулевой масштаб = скрыть инстанс
-          arr.fill(0, i * 16, i * 16 + 16);
-        }
-      }
-      tile.mesh.instanceMatrix.needsUpdate = true;
-    }
+    this.camera.getWorldPosition(_cam);
+    for (const tile of this.tiles.values()) this.updateLod(tile, _cam.x, _cam.z);
   }
 
   private addTile(x: number, z: number, key: string, payload: CityTilePayload, player: THREE.Vector3) {
@@ -206,68 +209,130 @@ export class CityWorld {
     root.position.set(x * this.tileSize, 0, z * this.tileSize);
     if (payload.roads) root.add(payload.roads);
 
-    let mesh: THREE.InstancedMesh | null = null;
     const buildings: BuildingRuntime[] = [];
     const baseMatrices: THREE.Matrix4[] = [];
+    const facadeGeometries = new Set<THREE.BufferGeometry>();
+    const byGeometry = new Map<THREE.BufferGeometry, number[]>();
 
-    if (payload.buildings.length > 0) {
-      mesh = new THREE.InstancedMesh(this.geom, this.material, payload.buildings.length);
-      mesh.castShadow = false;
-      mesh.receiveShadow = false;
-      mesh.frustumCulled = false; // LOD и frustum тайла управляем сами
-
-      for (let i = 0; i < payload.buildings.length; i++) {
-        const b = payload.buildings[i];
-        // position в BuildingSource — локальная для тайла
-        _p.set(b.position.x, b.size.y / 2, b.position.z);
-        _q.setFromAxisAngle(_up, b.rotationY ?? 0);
-        _s.set(Math.max(1, b.size.x), Math.max(2, b.size.y), Math.max(1, b.size.z));
-        _m.compose(_p, _q, _s);
-        mesh.setMatrixAt(i, _m);
-        const base = _m.clone();
-        baseMatrices.push(base);
-        _c.set(b.color ?? 0xc8c6bd);
-        mesh.setColorAt(i, _c);
-        const worldX = x * this.tileSize + b.position.x;
-        const worldZ = z * this.tileSize + b.position.z;
-        buildings.push({
-          source: b,
-          center: new THREE.Vector3(worldX, b.size.y / 2, worldZ),
-          visible: true,
-        });
-        void player;
+    for (let i = 0; i < payload.buildings.length; i++) {
+      const b = payload.buildings[i];
+      _p.set(b.position.x, b.size.y / 2, b.position.z);
+      _q.setFromAxisAngle(_up, b.rotationY ?? 0);
+      _s.set(Math.max(1, b.size.x), Math.max(2, b.size.y), Math.max(1, b.size.z));
+      _m.compose(_p, _q, _s);
+      baseMatrices.push(_m.clone());
+      buildings.push({
+        source: b,
+        center: new THREE.Vector3(x * this.tileSize + b.position.x, b.size.y / 2, z * this.tileSize + b.position.z),
+        geometry: b.geometry ?? null,
+      });
+      if (b.geometry) {
+        facadeGeometries.add(b.geometry);
+        const arr = byGeometry.get(b.geometry) ?? [];
+        arr.push(i);
+        byGeometry.set(b.geometry, arr);
       }
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+
+    // Дальний LOD: простые коробки для всех зданий
+    let boxMesh: THREE.InstancedMesh | null = null;
+    if (buildings.length > 0) {
+      boxMesh = new THREE.InstancedMesh(this.boxGeom, this.boxMaterial, buildings.length);
+      boxMesh.frustumCulled = false;
+      boxMesh.castShadow = false;
+      for (let i = 0; i < buildings.length; i++) {
+        boxMesh.setMatrixAt(i, baseMatrices[i]);
+        _c.set(buildings[i].source.color ?? 0xc8c6bd);
+        boxMesh.setColorAt(i, _c);
+      }
+      boxMesh.instanceMatrix.needsUpdate = true;
+      if (boxMesh.instanceColor) boxMesh.instanceColor.needsUpdate = true;
+      root.add(boxMesh);
+    }
+
+    // Ближний LOD: детализированные фасады, сгруппированные по геометрии
+    const detailMeshes: THREE.InstancedMesh[] = [];
+    const roadTris = countTriangles(payload.roads ?? null);
+    let remaining = Math.max(0, CITY_MAX_TILE_TRIANGLES - buildings.length * 12 - roadTris);
+
+    for (const [geometry, indices] of byGeometry) {
+      const tri = Math.floor((geometry.index?.count ?? geometry.getAttribute('position').count) / 3);
+      const capacity = Math.min(indices.length, Math.floor(remaining / Math.max(1, tri)));
+      if (capacity <= 0) continue;
+      remaining -= capacity * tri;
+      const mesh = new THREE.InstancedMesh(geometry, this.facadeMaterials, capacity);
+      mesh.count = 0;
+      mesh.frustumCulled = false;
+      mesh.userData.indices = indices.slice(0, capacity);
+      detailMeshes.push(mesh);
       root.add(mesh);
     }
 
     this.scene.add(root);
-    const minX = x * this.tileSize;
-    const minZ = z * this.tileSize;
+    const minX = x * this.tileSize, minZ = z * this.tileSize;
     this.tiles.set(key, {
-      x, z, key, root, mesh, buildings, baseMatrices,
+      x, z, key, root,
       bounds: new THREE.Box3(
         new THREE.Vector3(minX, -100, minZ),
-        new THREE.Vector3(minX + this.tileSize, 1000, minZ + this.tileSize)
+        new THREE.Vector3(minX + this.tileSize, 1000, minZ + this.tileSize),
       ),
-      inFrustum: true,
+      boxMesh, detailMeshes, facadeGeometries, buildings, baseMatrices, inFrustum: true,
     });
+    this.updateLod(this.tiles.get(key)!, player.x, player.z);
     this.onLoaded?.(x, z);
+  }
+
+  private updateLod(tile: TileRuntime, camX: number, camZ: number) {
+    const near: Array<{ index: number; dist: number }> = [];
+    for (let i = 0; i < tile.buildings.length; i++) {
+      const b = tile.buildings[i];
+      const dist = Math.hypot(b.center.x - camX, b.center.z - camZ);
+      if (dist <= CITY_DETAIL_DISTANCE && b.geometry) near.push({ index: i, dist });
+    }
+    near.sort((a, b) => a.dist - b.dist);
+
+    const selected = new Set<number>();
+    for (const mesh of tile.detailMeshes) {
+      const indices = mesh.userData.indices as number[];
+      const picked = indices.filter((idx) => near.some((n) => n.index === idx)).slice(0, mesh.instanceMatrix.count);
+      // Заполняем только реально выбранные ближайшие здания
+      const list = near.filter((n) => indices.includes(n.index)).slice(0, mesh.instanceMatrix.count);
+      void picked;
+      for (let slot = 0; slot < list.length; slot++) {
+        const idx = list[slot].index;
+        mesh.setMatrixAt(slot, tile.baseMatrices[idx]);
+        _c.set(tile.buildings[idx].source.color ?? 0xffffff);
+        mesh.setColorAt(slot, _c);
+        selected.add(idx);
+      }
+      mesh.count = list.length;
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+
+    if (tile.boxMesh) {
+      const arr = tile.boxMesh.instanceMatrix.array as Float32Array;
+      for (let i = 0; i < tile.buildings.length; i++) {
+        const dist = Math.hypot(tile.buildings[i].center.x - camX, tile.buildings[i].center.z - camZ);
+        const show = dist <= CITY_HIDDEN_DISTANCE && !selected.has(i);
+        if (show) arr.set(tile.baseMatrices[i].elements, i * 16);
+        else arr.fill(0, i * 16, i * 16 + 16);
+      }
+      tile.boxMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   private removeTile(key: string) {
     const tile = this.tiles.get(key);
     if (!tile) return;
     this.scene.remove(tile.root);
-    tile.root.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (mesh.geometry && mesh.geometry !== this.geom) mesh.geometry.dispose();
-      if (mesh.material && Array.isArray(mesh.material)) {
-        mesh.material.forEach((m) => m.dispose());
-      } else if (mesh.material && (mesh.material as THREE.Material).dispose &&
-                 (mesh.material as THREE.Material) !== this.material) {
-        (mesh.material as THREE.Material).dispose();
+    tile.root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      if (mesh.geometry !== this.boxGeom && !tile.facadeGeometries.has(mesh.geometry)) mesh.geometry.dispose();
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const mat of mats) {
+        if (mat !== this.boxMaterial && !this.facadeMaterials.includes(mat)) mat.dispose();
       }
     });
     this.tiles.delete(key);
@@ -277,7 +342,10 @@ export class CityWorld {
   dispose() {
     this.disposed = true;
     for (const key of [...this.tiles.keys()]) this.removeTile(key);
-    this.geom.dispose();
-    this.material.dispose();
+    this.boxGeom.dispose();
+    this.boxMaterial.dispose();
+    this.wallMaterial.dispose();
+    this.windowMaterial.dispose();
+    this.provider.dispose?.();
   }
 }

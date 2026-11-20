@@ -215,7 +215,7 @@ export class StreetMetadataProvider {
         id: String(road.id ?? `${x}:${z}:road:${i}`),
         points,
         width: Number.isFinite(width) && width > 0 ? width : 9,
-        coordinateSpace: 'tile',
+        coordinateSpace: 'world', // OSM-координаты в тайле уже абсолютные (метры от origin)
         markings: true,
         sidewalks: true,
       });

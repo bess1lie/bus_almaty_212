@@ -24,9 +24,12 @@ export class HUD {
     this.gameUi?.classList.remove('is-menu-open');
   }
 
-  setRoute(id: string, name: string) {
+  setRoute(id: string, name: string, distance?: number) {
     if (this.route) this.route.textContent = id;
     if (this.nextStop) this.nextStop.textContent = name;
+    if (distance !== undefined && this.stopDistance) {
+      this.stopDistance.textContent = `${distance} м`;
+    }
   }
 
   update(speedKmh: number, gear: string) {

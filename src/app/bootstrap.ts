@@ -13,9 +13,13 @@ import { CityWorld } from '../world/cityWorld';
 import { OsmTileProvider } from '../world/osmTileProvider';
 import { createEnvironment } from '../world/environment';
 import { createAtmosphere } from '../world/atmosphere';
+import { createTraffic } from '../world/traffic';
+import { RouteTracker } from '../gameplay/routeTracker';
+import { ROUTES } from '../gameplay/routes';
 import { createStreetProps } from '../world/streetProps';
 import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
+import { Telemetry } from '../core/telemetry';
 
 const FIXED_DT = 1 / 60;
 
@@ -29,6 +33,10 @@ let cityWorld: CityWorld;
 let streetProps: ReturnType<typeof createStreetProps>;
 let streetMetadata: StreetMetadataProvider;
 let atmosphere: ReturnType<typeof createAtmosphere>;
+let traffic: ReturnType<typeof createTraffic>;
+let telemetry: Telemetry;
+let basePixelRatio = 1;
+let routeTracker: RouteTracker;
 let hud: HUD;
 
 let accumulator = 0;
@@ -64,7 +72,9 @@ async function main() {
   const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
   renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.35 : 1.75));
+  basePixelRatio = Math.min(window.devicePixelRatio, isMobile ? 1.35 : 1.75);
+  renderer.setPixelRatio(basePixelRatio);
+  telemetry = new Telemetry(isMobile);
   renderer.shadowMap.enabled = !isMobile;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
@@ -89,6 +99,7 @@ async function main() {
 
   createEnvironment(scene);
   atmosphere = createAtmosphere(scene, chaseCam);
+  traffic = createTraffic(scene);
 
   // 2. Физика
   setLoading('Инициализация физики...', loadingTextEl);
@@ -130,6 +141,16 @@ async function main() {
   setupLookControl(renderer.domElement);
   hud = new HUD();
   setupMenuButtons();
+
+  // Маршруты: загружаем индекс остановок в фоне
+  routeTracker = new RouteTracker();
+  void routeTracker.load().then(() => {
+    const first = ROUTES[0];
+    if (first) {
+      routeTracker.selectRoute(first, 0);
+      console.info('[routes] загружены:', ROUTES.map((r) => r.id).join(', '));
+    }
+  }).catch((err) => console.warn('[routes] не загрузились:', err));
 
   clock = new THREE.Clock();
   window.addEventListener('resize', onResize);
@@ -294,10 +315,16 @@ function animate(time: number) {
   streetProps.update(activeCamTmp.getWorldPosition(new THREE.Vector3()));
   scene.userData.busPosition = pos;
   scene.userData.busQuaternion = bus.body.rotation();
+  scene.userData.isNight = scene.userData.timeOfDay === 'night';
   atmosphere.update(frameDt, activeCamTmp);
+  traffic.update(frameDt, pos, bus.getForward(), scene.userData.isNight === true);
 
   if (time - lastHudTime >= 100) {
     hud.update(bus.getSpeedKmh(), bus.getGear());
+    const progress = routeTracker.update(pos.x, pos.z);
+    if (progress) {
+      hud.setRoute(progress.routeId, progress.nextStop, progress.distanceM);
+    }
     lastHudTime = time;
   }
   if (time - lastStreetReport >= 5000) {
@@ -306,7 +333,11 @@ function animate(time: number) {
   }
 
   const activeCam = currentMode === 'driver' ? camera : chaseCam;
+  const renderStart = performance.now();
   renderer.render(scene, activeCam);
+  if (telemetry.update(time, performance.now() - renderStart, renderer.info.render)) {
+    renderer.setPixelRatio(basePixelRatio * telemetry.pixelRatioScale);
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {

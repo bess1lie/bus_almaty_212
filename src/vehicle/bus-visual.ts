@@ -9,11 +9,13 @@ const DOOR_TRAVEL = 0.30;
 const DOOR_DAMPING = 8.0;
 
 // Камера водителя относительно camera_driver.
-const CAMERA_MOUNT_Y = -0.52;
-const CAMERA_MOUNT_Z = 0.35;
+// Чуть выше и дальше назад: приборы уходят в нижнюю треть, а лобовое стекло
+// открывает больше дороги. Предел по Z — спинка сиденья (z=-3.76).
+const CAMERA_MOUNT_Y = -0.42;
+const CAMERA_MOUNT_Z = 0.55;
 
-// Положение руля относительно bus_root.
-const STEERING_WHEEL_TARGET_Y = -0.21;
+// Положение руля относительно bus_root (приподнят, чтобы оставаться в кадре).
+const STEERING_WHEEL_TARGET_Y = -0.05;
 const STEERING_WHEEL_SCALE = 0.82;
 
 // Лёгкий наклон камеры при поворотах.

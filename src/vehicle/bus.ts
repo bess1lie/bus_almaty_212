@@ -22,6 +22,13 @@ const REVERSE_MAX = 6;     // м/с (~22 км/ч)
 const DRAG = 1.4;          // сопротивление
 const MAX_STEER = 0.42;    // рад (~24°)
 
+// Старт: реальная дорога tertiary (w=6.5) в тайле -1_-1.
+// Точка взята из полилинии road id 690187856:0; тангенд direction=(-0.1253,-0.9921)
+// (почти строго на север). Впереди 80 м свободно, застройка по обеим сторонам.
+const START_X = -1353.87;
+const START_Z = -623.81;
+const START_YAW = 0.1257;  // поворот вокруг Y: локальный -Z -> мировой (-sin, -cos)
+
 export type CameraMode = 'driver' | 'chase';
 
 export class Bus {
@@ -63,9 +70,12 @@ export class Bus {
     colliderDesc.setFriction(0.5);
     world.createCollider(colliderDesc, this.body);
 
-    // Старт на реальной улице с открытым видом вперёд (проспект, 1.5 км восточнее центра)
-    this.body.setTranslation({ x: 0, y: BODY_HALF + 0.02, z: 0 }, true);
-    this.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+    // Старт на реальной улице с открытым видом вперёд
+    this.body.setTranslation({ x: START_X, y: BODY_HALF + 0.02, z: START_Z }, true);
+    this.body.setRotation(
+      { x: 0, y: Math.sin(START_YAW / 2), z: 0, w: Math.cos(START_YAW / 2) },
+      true,
+    );
     this.body.setEnabledTranslations(true, false, true, true); // Y зафиксирован
 
     this.buildFallback();

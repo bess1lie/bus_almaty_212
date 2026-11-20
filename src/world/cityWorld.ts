@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import type { World as RapierWorld } from '@dimforge/rapier3d-compat';
+import { getTextures, type BuildingTextureKind } from './textures';
 
 export const CITY_TILE_SIZE = 2000;
 export const CITY_DETAIL_DISTANCE = 300;
@@ -93,9 +94,8 @@ export class CityWorld {
   private readonly pending = new Set<string>();
   private readonly keep = new Set<string>();
   private readonly boxMaterial: THREE.MeshStandardMaterial;
-  private readonly wallMaterial: THREE.MeshStandardMaterial;
+  private readonly wallMaterials: Record<BuildingTextureKind, THREE.MeshStandardMaterial>;
   private readonly windowMaterial: THREE.MeshStandardMaterial;
-  private readonly facadeMaterials: THREE.Material[];
   private readonly onError?: CityWorldOptions['onTileError'];
   private readonly onLoaded?: CityWorldOptions['onTileLoaded'];
   private readonly onUnloaded?: CityWorldOptions['onTileUnloaded'];
@@ -114,13 +114,26 @@ export class CityWorld {
     this.onError = options.onTileError;
     this.onLoaded = options.onTileLoaded;
     this.onUnloaded = options.onTileUnloaded;
+    const tex = getTextures();
     this.boxMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, vertexColors: true });
-    this.wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 });
+    const mkWall = (kind: BuildingTextureKind) => new THREE.MeshStandardMaterial({
+      color: 0xffffff, vertexColors: true, roughness: 0.9, map: tex.walls[kind],
+    });
+    this.wallMaterials = {
+      apartments: mkWall('apartments'),
+      house: mkWall('house'),
+      commercial: mkWall('commercial'),
+      industrial: mkWall('industrial'),
+    };
     this.windowMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff, vertexColors: true, roughness: 0.35,
       emissive: 0xffb66e, emissiveIntensity: 0,
     });
-    this.facadeMaterials = [this.wallMaterial, this.windowMaterial];
+  }
+
+  private materialsFor(geometry: THREE.BufferGeometry): THREE.Material[] {
+    const kind = (geometry.userData.buildingKind as BuildingTextureKind) ?? 'apartments';
+    return [this.wallMaterials[kind] ?? this.wallMaterials.apartments, this.windowMaterial];
   }
 
   get loadedTileCount() { return this.tiles.size; }
@@ -260,7 +273,7 @@ export class CityWorld {
       const capacity = Math.min(indices.length, Math.floor(remaining / Math.max(1, tri)));
       if (capacity <= 0) continue;
       remaining -= capacity * tri;
-      const mesh = new THREE.InstancedMesh(geometry, this.facadeMaterials, capacity);
+      const mesh = new THREE.InstancedMesh(geometry, this.materialsFor(geometry), capacity);
       mesh.count = 0;
       mesh.frustumCulled = false;
       mesh.userData.indices = indices.slice(0, capacity);
@@ -332,7 +345,7 @@ export class CityWorld {
       if (mesh.geometry !== this.boxGeom && !tile.facadeGeometries.has(mesh.geometry)) mesh.geometry.dispose();
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const mat of mats) {
-        if (mat !== this.boxMaterial && !this.facadeMaterials.includes(mat)) mat.dispose();
+        if (mat !== this.boxMaterial && mat !== this.windowMaterial && !Object.values(this.wallMaterials).includes(mat as THREE.MeshStandardMaterial)) mat.dispose();
       }
     });
     this.tiles.delete(key);
@@ -344,7 +357,7 @@ export class CityWorld {
     for (const key of [...this.tiles.keys()]) this.removeTile(key);
     this.boxGeom.dispose();
     this.boxMaterial.dispose();
-    this.wallMaterial.dispose();
+    Object.values(this.wallMaterials).forEach((m) => m.dispose());
     this.windowMaterial.dispose();
     this.provider.dispose?.();
   }

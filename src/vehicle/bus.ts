@@ -25,9 +25,9 @@ const MAX_STEER = 0.42;    // рад (~24°)
 // Старт: реальная дорога primary (w=13) в 2.3 км юго-западнее центра.
 // Точка взята из полилинии OSM road; тангент direction=(+0.1053,-0.9944).
 // В конусе 200 м вперёд нет зданий выше 33 м, по бокам — застройка.
-const START_X = -1066.73;
-const START_Z = -2079.94;
-const START_YAW = -1.6562;  // поворот вокруг Y: локальный -Z -> мировой (-sin, -cos)
+const START_X = 0;
+const START_Z = 0;
+const START_YAW = 0; // дорога у центра идёт по -Z, автобус смотрит вперёд по -Z
 
 export type CameraMode = 'driver' | 'chase';
 

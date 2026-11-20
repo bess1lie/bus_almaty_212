@@ -5,6 +5,7 @@ import type {
   BuildingSource,
 } from './cityWorld';
 import type { CityBuilding, CityRoad } from './tiles';
+import { getTextures, type BuildingTextureKind } from './textures';
 
 const TILE_SIZE = 2000;
 const MAX_TILE_TRIANGLES = 30_000;
@@ -20,7 +21,7 @@ interface TileBuilding extends CityBuilding {
   'building:levels'?: number;
 }
 interface TileJson { buildings?: TileBuilding[]; roads?: Array<CityRoad & { t?: string; type?: string }>; }
-interface VertexData { positions: number[]; colors: number[]; }
+interface VertexData { positions: number[]; colors: number[]; uvs: number[]; }
 interface BuildingStyle {
   rows: number; columns: number; windowHeight: number;
   minHeight: number; maxHeight: number; palette: number[];
@@ -41,16 +42,23 @@ function positiveNumber(v: unknown): number | undefined {
 
 function pushQuad(target: VertexData, p0: Point3, p1: Point3, p2: Point3, p3: Point3, hex: number) {
   const c = new THREE.Color(hex);
-  for (const p of [p0, p1, p2, p0, p2, p3]) {
+  const pts = [p0, p1, p2, p0, p2, p3];
+  // Определяем плоскость по постоянной координате
+  const sameZ = Math.abs(p0[2] - p1[2]) < 1e-6 && Math.abs(p0[2] - p2[2]) < 1e-6;
+  const sameX = Math.abs(p0[0] - p1[0]) < 1e-6 && Math.abs(p0[0] - p2[0]) < 1e-6;
+  for (const p of pts) {
     target.positions.push(p[0], p[1], p[2]);
     target.colors.push(c.r, c.g, c.b);
+    if (sameZ) target.uvs.push(p[0] + 0.5, p[1]);
+    else if (sameX) target.uvs.push(p[2] + 0.5, p[1]);
+    else target.uvs.push(p[0] + 0.5, p[2] + 0.5);
   }
 }
 
 function makeFacadeGeometry(kind: BuildingKind): THREE.BufferGeometry {
   const style = STYLES[kind];
-  const body: VertexData = { positions: [], colors: [] };
-  const litWindows: VertexData = { positions: [], colors: [] };
+  const body: VertexData = { positions: [], colors: [], uvs: [] };
+  const litWindows: VertexData = { positions: [], colors: [], uvs: [] };
 
   pushQuad(body, [-0.5, 0, 0.5], [0.5, 0, 0.5], [0.5, 1, 0.5], [-0.5, 1, 0.5], 0xffffff);
   pushQuad(body, [0.5, 0, -0.5], [-0.5, 0, -0.5], [-0.5, 1, -0.5], [0.5, 1, -0.5], 0xe5e5e1);
@@ -93,6 +101,7 @@ function makeFacadeGeometry(kind: BuildingKind): THREE.BufferGeometry {
   const windowCount = litWindows.positions.length / 3;
   geometry.setAttribute('position', new THREE.Float32BufferAttribute([...body.positions, ...litWindows.positions], 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute([...body.colors, ...litWindows.colors], 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute([...body.uvs, ...litWindows.uvs], 2));
   geometry.addGroup(0, bodyCount, 0);
   if (windowCount > 0) geometry.addGroup(bodyCount, windowCount, 1);
   geometry.computeVertexNormals();
@@ -158,15 +167,17 @@ function samplePolyline(points: Point2[], maxSegments: number): Point2[] {
   result.push(points[points.length - 1]);
   return result;
 }
-function addRoadVertex(positions: number[], colors: number[], x: number, y: number, z: number, color: THREE.Color) {
+function addRoadVertex(positions: number[], colors: number[], uvs: number[], x: number, y: number, z: number, color: THREE.Color, originX: number, originZ: number) {
   positions.push(x, y, z);
   colors.push(color.r, color.g, color.b);
+  // UV в мировых метрах / 8 — текстура асфальта стыкуется между тайлами
+  uvs.push((x + originX) / 8, (z + originZ) / 8);
 }
 
 function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBudget: number): THREE.Group {
   const group = new THREE.Group();
   group.name = `roads-${tileX}_${tileZ}`;
-  const positions: number[] = [], colors: number[] = [], indices: number[] = [];
+  const positions: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
   const originX = tileX * TILE_SIZE, originZ = tileZ * TILE_SIZE;
   let remaining = Math.floor(triangleBudget / 6);
   const roadType = (r: CityRoad & { t?: string }) => r.type ?? r.t ?? '';
@@ -192,10 +203,10 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
       const x = ax - originX, z = az - originZ;
       const asphalt = asphaltBase.clone().multiplyScalar(0.94 + noise(ax, az) * 0.12);
       const curbC = new THREE.Color(0x96968e).multiplyScalar(0.97 + noise(az, ax) * 0.06);
-      addRoadVertex(positions, colors, x + nx * halfWidth, 0.055, z + nz * halfWidth, asphalt);
-      addRoadVertex(positions, colors, x - nx * halfWidth, 0.055, z - nz * halfWidth, asphalt);
-      addRoadVertex(positions, colors, x + nx * (halfWidth + curb), 0.12, z + nz * (halfWidth + curb), curbC);
-      addRoadVertex(positions, colors, x - nx * (halfWidth + curb), 0.12, z - nz * (halfWidth + curb), curbC);
+      addRoadVertex(positions, colors, uvs, x + nx * halfWidth, 0.055, z + nz * halfWidth, asphalt, originX, originZ);
+      addRoadVertex(positions, colors, uvs, x - nx * halfWidth, 0.055, z - nz * halfWidth, asphalt, originX, originZ);
+      addRoadVertex(positions, colors, uvs, x + nx * (halfWidth + curb), 0.12, z + nz * (halfWidth + curb), curbC, originX, originZ);
+      addRoadVertex(positions, colors, uvs, x - nx * (halfWidth + curb), 0.12, z - nz * (halfWidth + curb), curbC, originX, originZ);
     }
     for (let i = 0; i < points.length - 1; i++) {
       const a = vs + i * 4, b = a + 4;
@@ -210,11 +221,12 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-    vertexColors: true, roughness: 0.98, metalness: 0, side: THREE.DoubleSide,
+    vertexColors: true, map: getTextures().asphalt, roughness: 0.98, metalness: 0, side: THREE.DoubleSide,
   }));
   mesh.name = 'road-surface-and-curbs';
   mesh.castShadow = false;

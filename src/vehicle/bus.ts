@@ -139,7 +139,8 @@ export class Bus {
   }
 
   // ---------- Кадр ----------
-  update(dt: number, input: Readonly<InputState>, chaseCam: THREE.PerspectiveCamera) {
+  /** Только физика. Вызывается внутри fixed-step цикла до world.step(). */
+  update(dt: number, input: Readonly<InputState>) {
     const accel = 8;
     const brakeDecel = 15;
     const drag = 1.2;
@@ -176,29 +177,36 @@ export class Bus {
       true
     );
 
-    // Поворот вокруг Y — напрямую через угловую скорость.
-    // Скорость поворота зависит от скорости движения.
-    const turnRate = this.steerAngle * Math.min(1, Math.abs(this.speed) / 4) * 1.8;
+    // Поворот вокруг Y — минус и знак скорости (перед автобуса по -Z)
+    const turnRate =
+      -this.steerAngle * Math.sign(this.speed || 1) *
+      Math.min(1, Math.abs(this.speed) / 4) * 1.8;
     this.body.setAngvel({ x: 0, y: turnRate, z: 0 }, true);
+  }
 
-    // Визуал
+  /** Синхронизация визуала и камеры — ПОСЛЕ world.step(). */
+  syncVisual(dt: number, steering: number, chaseCam: THREE.PerspectiveCamera) {
+    const pos = this.body.translation();
+    const rot = this.body.rotation();
+    const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
+
     if (this.visual) {
-      this.visual.updateFromPhysics(dt, this.body, input.steering);
+      this.visual.updateFromPhysics(dt, this.body, steering);
     } else if (this.fallback) {
-      const pos = this.body.translation();
       this.fallback.position.set(pos.x, pos.y, pos.z);
       this.fallback.quaternion.copy(q);
     }
 
-    // Камеры
     if (this.cameraMode === 'chase') {
-      const pos = this.body.translation();
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+      forward.y = 0;
+      forward.normalize();
       const camPos = new THREE.Vector3(
         pos.x - forward.x * 9,
         pos.y + 3.2,
         pos.z - forward.z * 9
       );
-      chaseCam.position.lerp(camPos, dt * 8);
+      chaseCam.position.lerp(camPos, Math.min(1, dt * 8));
       chaseCam.lookAt(pos.x + forward.x * 15, pos.y + 1, pos.z + forward.z * 15);
     }
   }
@@ -210,6 +218,23 @@ export class Bus {
 
   getSpeedKmh(): number {
     return Math.abs(this.speed) * 3.6;
+  }
+
+  getGear(): string {
+    return this.speed < -0.1 ? 'R' : 'D';
+  }
+
+  getLinearVelocity(): THREE.Vector3 {
+    const v = this.body.linvel();
+    return new THREE.Vector3(v.x, v.y, v.z);
+  }
+
+  getForward(): THREE.Vector3 {
+    const rot = this.body.rotation();
+    const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
+    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+    f.y = 0;
+    return f.normalize();
   }
 
   dispose() {

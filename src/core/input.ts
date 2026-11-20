@@ -20,6 +20,7 @@ export type InputState = {
 // --- Клавиатура ---
 const kbd = {
   throttle: 0,
+  brake: 0,
   steering: 0,
   handbrake: false,
   doors: false,
@@ -57,6 +58,10 @@ function onKeyDown(e: KeyboardEvent) {
     case 'Space':
       kbd.handbrake = true;
       break;
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      kbd.brake = 1;
+      break;
     case 'KeyF':
       kbd.doors = true;
       break;
@@ -92,6 +97,10 @@ function onKeyUp(e: KeyboardEvent) {
       break;
     case 'Space':
       kbd.handbrake = false;
+      break;
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      kbd.brake = 0;
       break;
   }
 }
@@ -143,7 +152,7 @@ export function getInput(): Readonly<InputState> {
   // Приоритет: клавиатура > геймпад
   const throttle = kbd.throttle !== 0 ? kbd.throttle : pad.throttle;
   const steering = kbd.steering !== 0 ? kbd.steering : pad.steering;
-  const brake = Math.max(pad.brake, kbd.handbrake ? 0 : 0); // brake только с геймпада
+  const brake = Math.max(pad.brake, kbd.brake);
   const handbrake = kbd.handbrake || pad.handbrake;
 
   return {

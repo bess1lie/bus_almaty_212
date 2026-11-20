@@ -1,29 +1,35 @@
 /**
  * bootstrap.ts — точка входа приложения.
- * Three.js + Rapier + TileManager + Bus(GLTF) + ввод + HUD + игровой цикл.
+ * Three.js + Rapier + CityWorld(BatchedMesh/LOD/frustum/prefetch) + Bus(GLTF) + UI.
  */
 
 import * as THREE from 'three';
-import { initPhysics, stepPhysics, createStaticFloor } from '../core/rapier';
+import { initPhysics, stepPhysics, createStaticFloor, getEventQueue } from '../core/rapier';
+import { getPhysicsWorld } from '../core/rapier';
 import { initInput, getInput, clearFrameFlags } from '../core/input';
 import { initAudio, updateEngine, playHorn, playDoors } from '../core/audio';
 import { Bus } from '../vehicle/bus';
 import { CityWorld } from '../world/cityWorld';
+import { OsmTileProvider } from '../world/osmTileProvider';
 import { createEnvironment } from '../world/environment';
 import { HUD } from '../ui/hud';
 
+const FIXED_DT = 1 / 60;
+
 let scene: THREE.Scene;
-let camera: THREE.PerspectiveCamera;   // камера кабины (уходит в GLB)
-let chaseCam: THREE.PerspectiveCamera; // камера третьего лица
+let camera: THREE.PerspectiveCamera;
+let chaseCam: THREE.PerspectiveCamera;
 let renderer: THREE.WebGLRenderer;
 let clock: THREE.Clock;
 let bus: Bus;
 let cityWorld: CityWorld;
 let hud: HUD;
 
-let frameCount = 0;
-let lastFpsTime = 0;
-let currentMode: 'driver' | 'chase' = 'driver';
+let accumulator = 0;
+let lastHudTime = 0;
+let currentMode: 'driver' | 'chase' = 'chase';
+let lookYaw = 0;
+let lookPitch = 0;
 
 // Тач-зоны
 let touchSteer = 0;
@@ -45,69 +51,87 @@ async function main() {
   scene.fog = new THREE.FogExp2(0x0f172a, 0.0012);
 
   const aspect = container.clientWidth / container.clientHeight || 16 / 9;
-  camera = new THREE.PerspectiveCamera(70, aspect, 0.05, 2000);
-  chaseCam = new THREE.PerspectiveCamera(60, aspect, 0.1, 2000);
+  camera = new THREE.PerspectiveCamera(70, aspect, 0.05, 3000);
+  chaseCam = new THREE.PerspectiveCamera(60, aspect, 0.1, 3000);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.35 : 1.75));
+  renderer.shadowMap.enabled = !isMobile;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
   scene.add(ambient);
 
   const sun = new THREE.DirectionalLight(0xffffff, 1.4);
   sun.position.set(60, 70, 20);
-  sun.castShadow = true;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 500;
-  sun.shadow.camera.left = -120;
-  sun.shadow.camera.right = 120;
-  sun.shadow.camera.top = 120;
-  sun.shadow.camera.bottom = -120;
+  if (!isMobile) {
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 500;
+    sun.shadow.camera.left = -120;
+    sun.shadow.camera.right = 120;
+    sun.shadow.camera.top = 120;
+    sun.shadow.camera.bottom = -120;
+  }
   scene.add(sun);
 
-  // Окружение: горы, закатное небо, тёплый свет
   createEnvironment(scene);
 
   // 2. Физика
   setLoading('Инициализация физики...', loadingTextEl);
   await initPhysics();
-  createStaticFloor(2000);
-  stepPhysics(0);
+  createStaticFloor(30000);
 
-  // 3. Карта
+  // 3. Город (CityWorld)
   setLoading('Загрузка города Алматы...', loadingTextEl);
-  cityWorld = new CityWorld(scene);
+  cityWorld = new CityWorld(
+    scene,
+    chaseCam, // frustum считаем по камере (в кабине камера внутри GLB)
+    new OsmTileProvider(),
+    getPhysicsWorld(),
+    { onTileError: (x, z, e) => console.error(`[CityWorld] тайл ${x}_${z}:`, e) }
+  );
 
-  // 4. Автобус (модель грузим в фоне, не блокируем старт)
+  // 4. Автобус — стартуем без ожидания GLB
   setLoading('Посадка за руль...', loadingTextEl);
   bus = new Bus(scene);
+  bus.setCameraMode('chase');
   const modelUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;
-  void bus.loadModel(modelUrl, camera).then((loaded) => {
-    if (!loaded) console.warn('[bootstrap] GLB не загружен, fallback активен.');
-  });
+  const modelPromise = bus.loadModel(modelUrl, camera);
 
-  // 5. Звук, ввод и HUD (звук тоже в фоне)
-  void initAudio().catch((err) => console.warn('[audio] недоступен:', err));
+  // 5. Ввод, звук, UI — сразу
+  void initAudio().catch((e) => console.warn('[audio]', e));
   initInput();
   setupTouchZones(container);
+  setupLookControl(renderer.domElement);
   hud = new HUD();
   setupMenuButtons();
 
-  // Экран загрузки убираем СРАЗУ — игра всегда стартует
+  clock = new THREE.Clock();
+  window.addEventListener('resize', onResize);
+
   if (loadingEl) {
     loadingEl.classList.add('hidden');
     setTimeout(() => loadingEl.remove(), 400);
   }
 
-  clock = new THREE.Clock();
-  window.addEventListener('resize', onResize);
   animate(0);
+
+  // После загрузки модели — включаем кабину
+  void modelPromise.then((loaded) => {
+    if (loaded) {
+      currentMode = 'driver';
+      bus.setCameraMode('driver');
+      console.info('[bus] Модель загружена, кабина активна');
+    } else {
+      console.warn('[bus] GLB не загружен — внешняя камера');
+    }
+  });
 }
 
 function setLoading(text: string, el: HTMLElement) {
@@ -125,12 +149,20 @@ function onResize() {
   renderer.setSize(container.clientWidth, container.clientHeight);
 }
 
+function setupLookControl(dom: HTMLElement) {
+  dom.addEventListener('pointermove', (e) => {
+    if (e.buttons !== 1 || currentMode !== 'driver') return;
+    lookYaw -= e.movementX * 0.002;
+    lookPitch -= e.movementY * 0.002;
+    bus.setLook(lookYaw, lookPitch);
+  });
+}
+
 function setupMenuButtons() {
   document.querySelectorAll<HTMLElement>('[data-action]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const action = btn.dataset.action;
-      switch (action) {
+      switch (btn.dataset.action) {
         case 'free-ride':
           hud.startGame();
           break;
@@ -148,22 +180,13 @@ function setupMenuButtons() {
         case 'reset':
           window.location.reload();
           break;
-        case 'photo':
-        case 'pause':
-        case 'map':
-        case 'lines':
-        case 'settings':
-        case 'handbrake':
-          // заглушки — логика позже
-          break;
       }
     });
   });
 }
 
 function setupTouchZones(container: HTMLElement) {
-  const isButton = (t: EventTarget | null) =>
-    t instanceof HTMLElement && t.tagName === 'BUTTON';
+  const isButton = (t: EventTarget | null) => t instanceof HTMLElement && t.tagName === 'BUTTON';
 
   container.addEventListener('touchstart', (e) => {
     if (isButton(e.target)) return;
@@ -208,9 +231,10 @@ function setupTouchZones(container: HTMLElement) {
 function animate(time: number) {
   requestAnimationFrame(animate);
 
-  const dt = Math.min(clock.getDelta(), 0.1);
-  const input = getInput();
+  const frameDt = Math.min(clock.getDelta(), 0.05);
+  accumulator = Math.min(accumulator + frameDt, 0.1);
 
+  const input = getInput();
   if (input.camera) {
     currentMode = currentMode === 'chase' ? 'driver' : 'chase';
     bus.setCameraMode(currentMode);
@@ -231,20 +255,23 @@ function animate(time: number) {
     steering: input.steering !== 0 ? input.steering : touchSteer,
   };
 
-  const pos = bus.getPosition();
-  cityWorld.setPlayerPosition(pos.x, pos.z);
-  cityWorld.update(dt);
-
-  bus.update(dt, merged, chaseCam);
-
-  frameCount++;
-  if (time - lastFpsTime >= 1000) {
-    hud.update(bus.getSpeedKmh(), currentMode === 'driver' ? 'D' : 'D');
-    frameCount = 0;
-    lastFpsTime = time;
+  // Фиксированный шаг физики
+  while (accumulator >= FIXED_DT) {
+    bus.update(FIXED_DT, merged);
+    stepPhysics(FIXED_DT);
+    accumulator -= FIXED_DT;
   }
+  bus.syncVisual(frameDt, merged.steering, chaseCam);
 
-  stepPhysics(dt);
+  const pos = bus.getPosition();
+  const vel = bus.getLinearVelocity();
+  const fwd = bus.getForward();
+  cityWorld.update({ position: pos, velocity: vel, forward: fwd, deltaSeconds: frameDt });
+
+  if (time - lastHudTime >= 100) {
+    hud.update(bus.getSpeedKmh(), bus.getGear());
+    lastHudTime = time;
+  }
 
   const activeCam = currentMode === 'driver' ? camera : chaseCam;
   renderer.render(scene, activeCam);

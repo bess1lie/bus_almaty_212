@@ -84,24 +84,22 @@ async function main() {
   setLoading('Загрузка города Алматы...', loadingTextEl);
   cityWorld = new CityWorld(scene);
 
-  // 4. Автобус + модель
-  setLoading('Загрузка автобуса...', loadingTextEl);
+  // 4. Автобус (модель грузим в фоне, не блокируем старт)
+  setLoading('Посадка за руль...', loadingTextEl);
   bus = new Bus(scene);
   const modelUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;
-  const loaded = await bus.loadModel(modelUrl, camera);
-  if (!loaded) console.warn('[bootstrap] GLB не загружен, fallback активен.');
+  void bus.loadModel(modelUrl, camera).then((loaded) => {
+    if (!loaded) console.warn('[bootstrap] GLB не загружен, fallback активен.');
+  });
 
-  // 5. Звук, ввод и HUD
-  try {
-    await initAudio();
-  } catch (err) {
-    console.warn('[audio] звук недоступен:', err);
-  }
+  // 5. Звук, ввод и HUD (звук тоже в фоне)
+  void initAudio().catch((err) => console.warn('[audio] недоступен:', err));
   initInput();
   setupTouchZones(container);
   hud = new HUD();
   setupMenuButtons();
 
+  // Экран загрузки убираем СРАЗУ — игра всегда стартует
   if (loadingEl) {
     loadingEl.classList.add('hidden');
     setTimeout(() => loadingEl.remove(), 400);

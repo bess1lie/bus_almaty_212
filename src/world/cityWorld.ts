@@ -307,7 +307,7 @@ export class CityWorld {
 
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
-        const key = `${tx + dx},${tz + dz}`;
+        const key = `${tx + dx}_${tz + dz}`;
         needed.add(key);
         if (!this.tiles.has(key) && !this.loading.has(key)) {
           this.loadTile(key);

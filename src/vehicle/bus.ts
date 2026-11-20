@@ -168,11 +168,11 @@ export class Bus {
     if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
     forward.normalize();
 
-    // Прямое задание скорости — стабильно, без накопления силы.
-    // Вертикальную скорость оставляем физике (гравитация/пол).
-    const vel = this.body.linvel();
+    // Жёсткая стабилизация: автобус всегда стоит на земле, без крена/полёта.
+    const pos = this.body.translation();
+    this.body.setTranslation({ x: pos.x, y: BODY_HALF_HEIGHT, z: pos.z }, true);
     this.body.setLinvel(
-      { x: forward.x * this.speed, y: vel.y, z: forward.z * this.speed },
+      { x: forward.x * this.speed, y: 0, z: forward.z * this.speed },
       true
     );
 

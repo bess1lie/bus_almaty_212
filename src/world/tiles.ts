@@ -27,11 +27,11 @@ export type CityTile = {
 const TILE_SIZE = 2000;
 
 export function tileKeyFromPos(x: number, z: number): string {
-  return `${Math.floor(x / TILE_SIZE)},${Math.floor(z / TILE_SIZE)}`;
+  return `${Math.floor(x / TILE_SIZE)}_${Math.floor(z / TILE_SIZE)}`;
 }
 
 export function tileCenter(key: string): [number, number] {
-  const [tx, tz] = key.split(',').map(Number);
+  const [tx, tz] = key.split('_').map(Number);
   return [tx * TILE_SIZE + TILE_SIZE / 2, tz * TILE_SIZE + TILE_SIZE / 2];
 }
 

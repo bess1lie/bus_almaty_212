@@ -1,0 +1,750 @@
+/* BUS ALMATY 212 · UI design system
+   No external fonts, images, frameworks or JavaScript dependencies.
+   Themes: day, sunset, night. Set data-theme on .game-ui.
+*/
+
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  /* Default theme: sunset */
+  --ui-bg: #211F29;
+  --ui-panel: #302B36;
+  --ui-panel-raised: #3B3440;
+  --ui-accent: #55C4B6;
+  --ui-accent-strong: #2D9E94;
+  --ui-text: #F7F0E9;
+  --ui-muted: #BDB1B0;
+  --ui-line: #564B56;
+  --ui-warning: #F3A35F;
+  --ui-danger: #F07878;
+  --ui-success: #78C4A2;
+  --ui-scrim: rgba(20, 17, 25, .68);
+  --ui-shadow: 0 12px 36px rgba(0, 0, 0, .28);
+
+  --ui-radius: 18px;
+  --ui-radius-small: 12px;
+  --ui-blur: 14px;
+  --ui-space: 12px;
+}
+
+/* DAY */
+.game-ui[data-theme="day"] {
+  color-scheme: light;
+  --ui-bg: #E8F0ED;
+  --ui-panel: #F8FAF8;
+  --ui-panel-raised: #FFFFFF;
+  --ui-accent: #177B77;
+  --ui-accent-strong: #105F5C;
+  --ui-text: #19302F;
+  --ui-muted: #617775;
+  --ui-line: #CBDAD6;
+  --ui-warning: #C66A2E;
+  --ui-danger: #C44E52;
+  --ui-success: #347A61;
+  --ui-scrim: rgba(23, 43, 42, .24);
+  --ui-shadow: 0 12px 36px rgba(35, 57, 53, .13);
+}
+
+/* SUNSET */
+.game-ui[data-theme="sunset"] {
+  color-scheme: dark;
+  --ui-bg: #211F29;
+  --ui-panel: #302B36;
+  --ui-panel-raised: #3B3440;
+  --ui-accent: #55C4B6;
+  --ui-accent-strong: #2D9E94;
+  --ui-text: #F7F0E9;
+  --ui-muted: #BDB1B0;
+  --ui-line: #564B56;
+  --ui-warning: #F3A35F;
+  --ui-danger: #F07878;
+  --ui-success: #78C4A2;
+  --ui-scrim: rgba(20, 17, 25, .68);
+  --ui-shadow: 0 12px 36px rgba(0, 0, 0, .28);
+}
+
+/* NIGHT */
+.game-ui[data-theme="night"] {
+  color-scheme: dark;
+  --ui-bg: #0C1519;
+  --ui-panel: #101E23;
+  --ui-panel-raised: #162930;
+  --ui-accent: #61D0BF;
+  --ui-accent-strong: #36AFA1;
+  --ui-text: #E8F5F1;
+  --ui-muted: #91AAA6;
+  --ui-line: #29434A;
+  --ui-warning: #FFC46B;
+  --ui-danger: #FF7777;
+  --ui-success: #77CCA8;
+  --ui-scrim: rgba(4, 11, 14, .78);
+  --ui-shadow: 0 12px 40px rgba(0, 0, 0, .48);
+}
+
+.game-ui,
+.game-ui *,
+.game-ui *::before,
+.game-ui *::after {
+  box-sizing: border-box;
+}
+
+.game-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ui-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-ui button {
+  color: inherit;
+  font: inherit;
+}
+
+.game-ui button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .18s ease, visibility .18s ease;
+}
+
+.game-ui.is-menu-open .hud {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hud-top {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hud-left,
+.hud-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hud-right {
+  align-items: flex-end;
+}
+
+.hud-card {
+  padding: 13px 15px;
+  background: color-mix(in srgb, var(--ui-panel) 92%, transparent);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(var(--ui-blur));
+  -webkit-backdrop-filter: blur(var(--ui-blur));
+}
+
+.ui-label {
+  color: var(--ui-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+/* SPEED */
+.speed-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 205px;
+}
+
+.speed-dial {
+  position: relative;
+  display: grid;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.speed-dial::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 225deg,
+    var(--ui-accent) 0deg 220deg,
+    var(--ui-line) 220deg 270deg,
+    transparent 270deg 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+}
+
+.speed-center {
+  position: absolute;
+  inset: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border-radius: 50%;
+  background: var(--ui-panel);
+}
+
+.speed-value {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 29px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.06em;
+}
+
+.speed-unit {
+  margin-top: 5px;
+  color: var(--ui-muted);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.speed-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.speed-limit {
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+
+/* GEAR */
+.gear-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  min-width: 145px;
+}
+
+.gear-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gear-description {
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+
+.gear-value {
+  color: var(--ui-accent);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 28px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+/* NEXT STOP */
+.next-stop {
+  width: min(270px, 100%);
+}
+
+.stop-route {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.route-badge {
+  display: inline-flex;
+  min-width: 43px;
+  height: 29px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: var(--ui-accent);
+  color: #102A28;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.stop-name {
+  overflow: hidden;
+  color: var(--ui-text);
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stop-distance {
+  margin-top: 6px;
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+
+.stop-distance strong {
+  color: var(--ui-accent);
+  font-weight: 750;
+}
+
+/* MINIMAP PLACEHOLDER */
+.minimap-card {
+  width: 190px;
+  padding: 10px;
+}
+
+.minimap-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1px 2px 9px;
+}
+
+.minimap {
+  position: relative;
+  width: 100%;
+  height: 132px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-line) 75%, transparent);
+  border-radius: 10px;
+  background-color: var(--ui-panel-raised);
+  background-image:
+    linear-gradient(90deg, transparent 47%, var(--ui-line) 48%, var(--ui-line) 49%, transparent 50%),
+    linear-gradient(0deg, transparent 47%, var(--ui-line) 48%, var(--ui-line) 49%, transparent 50%);
+  background-size: 36px 36px;
+}
+
+.map-road {
+  position: absolute;
+  border-radius: 10px;
+  background: var(--ui-line);
+}
+
+.map-road-a {
+  top: 45%;
+  left: -20%;
+  width: 150%;
+  height: 8px;
+  transform: rotate(-28deg);
+}
+
+.map-road-b {
+  top: -20%;
+  left: 58%;
+  width: 8px;
+  height: 150%;
+  transform: rotate(16deg);
+}
+
+.map-route {
+  position: absolute;
+  top: 15%;
+  left: 48%;
+  width: 5px;
+  height: 69%;
+  border-radius: 6px;
+  background: var(--ui-accent);
+  transform: rotate(28deg);
+}
+
+.map-stop {
+  position: absolute;
+  top: 18%;
+  left: 43%;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--ui-panel);
+  border-radius: 50%;
+  background: var(--ui-warning);
+}
+
+.map-player {
+  position: absolute;
+  top: 55%;
+  left: 56%;
+  width: 13px;
+  height: 13px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ui-accent) 65%, transparent);
+}
+
+/* CONTROL DOCK */
+.control-dock {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+  max-width: 460px;
+  pointer-events: auto;
+}
+
+.icon-button {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ui-line);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--ui-panel) 94%, transparent);
+  box-shadow: var(--ui-shadow);
+  color: #FFFFFF;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .13s ease, background .13s ease, border-color .13s ease;
+}
+
+.icon-button:hover {
+  border-color: var(--ui-accent);
+  background: var(--ui-panel-raised);
+}
+
+.icon-button:active {
+  transform: scale(.94);
+}
+
+.icon-button.is-active {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-strong);
+}
+
+.icon-button img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+/* MENU */
+.main-menu {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--ui-scrim);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  pointer-events: auto;
+}
+
+.game-ui.is-menu-open .main-menu {
+  display: flex;
+}
+
+.menu-panel {
+  width: min(100%, 390px);
+  padding: 30px;
+  border: 1px solid var(--ui-line);
+  border-radius: 24px;
+  background: var(--ui-panel);
+  box-shadow: var(--ui-shadow);
+}
+
+.menu-brand {
+  color: var(--ui-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .19em;
+}
+
+.menu-title {
+  margin: 15px 0 5px;
+  font-size: clamp(30px, 7vw, 39px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  line-height: 1.04;
+}
+
+.menu-subtitle {
+  margin: 0 0 26px;
+  color: var(--ui-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-button {
+  display: flex;
+  min-height: 55px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  border: 1px solid var(--ui-line);
+  border-radius: 13px;
+  background: var(--ui-panel-raised);
+  color: var(--ui-text);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .13s ease, background .13s ease, border-color .13s ease;
+}
+
+.menu-button:hover {
+  border-color: var(--ui-accent);
+  background: color-mix(in srgb, var(--ui-panel-raised) 78%, var(--ui-accent) 22%);
+}
+
+.menu-button:active {
+  transform: scale(.985);
+}
+
+.menu-button.primary {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+  color: #102A28;
+}
+
+.menu-button.primary:hover {
+  background: var(--ui-accent-strong);
+  color: #FFFFFF;
+}
+
+.menu-arrow {
+  color: currentColor;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 18px;
+  opacity: .75;
+}
+
+.menu-footer {
+  margin-top: 22px;
+  padding-top: 15px;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+/* Static showcase: HUD and menu shown together only in preview.html. */
+.game-ui[data-preview="all"] .main-menu {
+  inset: auto 18px 94px auto;
+  display: flex;
+  width: min(320px, calc(100% - 36px));
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.game-ui[data-preview="all"] .menu-panel {
+  width: 100%;
+  padding: 20px;
+}
+
+.game-ui[data-preview="all"] .menu-title {
+  margin-top: 8px;
+  font-size: 27px;
+}
+
+.game-ui[data-preview="all"] .menu-subtitle {
+  margin-bottom: 14px;
+}
+
+.game-ui[data-preview="all"] .menu-actions {
+  gap: 7px;
+}
+
+.game-ui[data-preview="all"] .menu-button {
+  min-height: 43px;
+  font-size: 13px;
+}
+
+.game-ui[data-preview="all"] .menu-footer {
+  margin-top: 12px;
+}
+
+.game-ui[data-preview="all"] .control-dock {
+  right: auto;
+  left: max(18px, env(safe-area-inset-left));
+  justify-content: flex-start;
+  max-width: min(460px, calc(100% - 36px));
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .hud-top {
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    gap: 7px;
+  }
+
+  .hud-left,
+  .hud-right {
+    gap: 7px;
+  }
+
+  .hud-card {
+    padding: 9px 10px;
+    border-radius: 13px;
+  }
+
+  .speed-card {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .speed-dial {
+    width: 68px;
+    height: 68px;
+    flex-basis: 68px;
+  }
+
+  .speed-center {
+    inset: 6px;
+  }
+
+  .speed-value {
+    font-size: 23px;
+  }
+
+  .speed-unit {
+    margin-top: 3px;
+    font-size: 9px;
+  }
+
+  .gear-card {
+    min-width: 112px;
+    gap: 10px;
+  }
+
+  .gear-value {
+    font-size: 23px;
+  }
+
+  .next-stop {
+    width: min(175px, 100%);
+  }
+
+  .stop-name {
+    font-size: 14px;
+  }
+
+  .stop-distance {
+    font-size: 10px;
+  }
+
+  .minimap-card {
+    width: 145px;
+  }
+
+  .minimap {
+    height: 102px;
+  }
+
+  .control-dock {
+    right: 10px;
+    bottom: max(11px, env(safe-area-inset-bottom));
+    left: 10px;
+    justify-content: center;
+    gap: 7px;
+    max-width: none;
+  }
+
+  .icon-button {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+  }
+
+  .icon-button img {
+    width: 23px;
+    height: 23px;
+  }
+
+  .menu-panel {
+    padding: 24px;
+  }
+
+  .game-ui[data-preview="all"] .main-menu {
+    right: 10px;
+    bottom: 76px;
+    width: min(260px, calc(100% - 20px));
+  }
+
+  .game-ui[data-preview="all"] .control-dock {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    max-width: none;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 370px) {
+  .speed-info {
+    display: none;
+  }
+
+  .minimap-card {
+    width: 126px;
+  }
+
+  .icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .control-dock {
+    gap: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-ui *,
+  .game-ui *::before,
+  .game-ui *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}

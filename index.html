@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>bus_almaty_212 — автобусный симулятор Алматы</title>
+    <meta name="description" content="Браузерный автобусный симулятор по Алматы и Карасайскому району" />
+    <meta name="theme-color" content="#211F29" />
+    <meta property="og:image" content="/bus_almaty_212/docs/cover.png" />
+    <link rel="manifest" href="/bus_almaty_212/manifest.webmanifest" />
+    <link rel="stylesheet" href="/bus_almaty_212/ui/bus-ui.css" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+      #canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+      #loading {
+        position: fixed; inset: 0; background: #0b0d17; color: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 100; transition: opacity .4s ease;
+      }
+      #loading.hidden { opacity: 0; pointer-events: none; }
+      .spinner {
+        width: 44px; height: 44px; border: 3px solid #1a1a2e;
+        border-top-color: #55C4B6; border-radius: 50%;
+        animation: spin .8s linear infinite; margin-bottom: 14px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #loading h1 { font-size: 1.4rem; letter-spacing: .12em; text-transform: uppercase; color: #55C4B6; }
+      #loading p { margin-top: 8px; color: #94a3b8; font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <div id="loading">
+      <div class="spinner"></div>
+      <h1>bus_almaty_212</h1>
+      <p id="loading-text">Загрузка мира Алматы...</p>
+    </div>
+
+    <div id="canvas"></div>
+
+    <!-- UI Kit: HUD + главное меню -->
+    <div class="game-ui is-menu-open" data-theme="sunset" id="game-ui">
+      <section class="hud" aria-label="Игровой интерфейс">
+        <header class="hud-top">
+          <div class="hud-left">
+            <section class="hud-card speed-card">
+              <div class="speed-dial" aria-hidden="true">
+                <div class="speed-center">
+                  <span class="speed-value" data-field="speed">0</span>
+                  <span class="speed-unit">км/ч</span>
+                </div>
+              </div>
+              <div class="speed-info">
+                <span class="ui-label">Скорость</span>
+                <span class="speed-limit">Ограничение 60 км/ч</span>
+              </div>
+            </section>
+            <section class="hud-card gear-card">
+              <div class="gear-meta">
+                <span class="ui-label">Передача</span>
+                <span class="gear-description">Автомат</span>
+              </div>
+              <span class="gear-value" data-field="gear">D</span>
+            </section>
+          </div>
+          <aside class="hud-right">
+            <section class="hud-card next-stop">
+              <div class="stop-route">
+                <span class="ui-label">Следующая остановка</span>
+                <span class="route-badge" data-field="route">212</span>
+              </div>
+              <div class="stop-name" data-field="next-stop">пр. Абая</div>
+              <div class="stop-distance">Через <strong data-field="stop-distance">280 м</strong></div>
+            </section>
+          </aside>
+        </header>
+        <nav class="control-dock" aria-label="Управление автобусом">
+          <button class="icon-button" type="button" data-action="doors" title="Двери"><img src="/bus_almaty_212/ui/icons/doors.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="camera" title="Камера"><img src="/bus_almaty_212/ui/icons/camera_view.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="horn" title="Сигнал"><img src="/bus_almaty_212/ui/icons/horn.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="handbrake" title="Ручник"><img src="/bus_almaty_212/ui/icons/handbrake.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="reset" title="Сброс"><img src="/bus_almaty_212/ui/icons/reset.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="photo" title="Фоторежим"><img src="/bus_almaty_212/ui/icons/photo.svg" alt="" width="26" height="26"></button>
+          <button class="icon-button" type="button" data-action="pause" title="Пауза"><img src="/bus_almaty_212/ui/icons/pause.svg" alt="" width="26" height="26"></button>
+        </nav>
+      </section>
+
+      <section class="main-menu" aria-label="Главное меню">
+        <div class="menu-panel">
+          <div class="menu-brand">BUS ALMATY · 212</div>
+          <h1 class="menu-title">Алматы</h1>
+          <p class="menu-subtitle">Городской автобусный симулятор</p>
+          <div class="menu-actions">
+            <button class="menu-button primary" type="button" data-action="free-ride"><span>Свободная езда</span><span class="menu-arrow">↗</span></button>
+            <button class="menu-button" type="button" data-action="lines"><span>Линии</span><span class="menu-arrow">›</span></button>
+            <button class="menu-button" type="button" data-action="settings"><span>Настройки</span><span class="menu-arrow">›</span></button>
+          </div>
+          <div class="menu-footer">LOW-POLY CITY · ALMATY, KZ</div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

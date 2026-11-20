@@ -1,0 +1,12 @@
+{
+  "name": "bus_almaty_212 — симулятор автобуса",
+  "short_name": "Bus 212",
+  "description": "Браузерный автобусный симулятор по Алматы и Каскелену",
+  "start_url": "/bus_almaty_212/",
+  "scope": "/bus_almaty_212/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#211F29",
+  "theme_color": "#55C4B6",
+  "icons": []
+}

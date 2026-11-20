@@ -1,0 +1,698 @@
+{
+  "id": "244",
+  "name_ru": "Автобус 244, Алматы — Бекболат Ашекеев / Кайнар",
+  "name_kz": null,
+  "coordinate_system": "WGS84",
+  "directions": [
+    {
+      "id": "kainar_to_momyshuly",
+      "from": "Село Кайнар",
+      "to": "Станция метро Бауыржана Момышулы",
+      "stops": [
+        {
+          "name_ru": "Село Кайнар, начальная",
+          "name_kz": null,
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Село Бекболат Ашекеев",
+          "name_kz": null,
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Ушконыр",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Шалкар",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Кольцо, Каскелен",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Жазира, Каскелен",
+          "name_kz": null,
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Пушкина",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Абая",
+          "name_kz": null,
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Карасай батыра / Байгазиева",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Автостанция",
+          "name_kz": null,
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Кунаева",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Алтын Аул",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СДУ",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Долан",
+          "name_kz": null,
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Кумтоган",
+          "name_kz": null,
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи, 19-й км",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Суюнбая",
+          "name_kz": null,
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Поворот на посёлок Райымбек",
+          "name_kz": null,
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Посёлок Иргели",
+          "name_kz": null,
+          "sequence": 20,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Алтын Орда",
+          "name_kz": null,
+          "sequence": 21,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Алтын Орда, южная остановка",
+          "name_kz": null,
+          "sequence": 22,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Дала",
+          "name_kz": null,
+          "sequence": 23,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Жакыбаева",
+          "name_kz": null,
+          "sequence": 24,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ЖК Alma City",
+          "name_kz": null,
+          "sequence": 25,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "КГ Елисейские поля",
+          "name_kz": null,
+          "sequence": 26,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Шугыла",
+          "name_kz": null,
+          "sequence": 27,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ЖК Шугыла",
+          "name_kz": null,
+          "sequence": 28,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 29,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ЦОН",
+          "name_kz": null,
+          "sequence": 30,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 31,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "НИШ",
+          "name_kz": null,
+          "sequence": 32,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Аспандиярова",
+          "name_kz": null,
+          "sequence": 33,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Косынова",
+          "name_kz": null,
+          "sequence": 34,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Яссауи",
+          "name_kz": null,
+          "sequence": 35,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Станция метро Бауыржана Момышулы, конечная",
+          "name_kz": null,
+          "sequence": 36,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        }
+      ]
+    },
+    {
+      "id": "momyshuly_to_kainar",
+      "from": "Станция метро Бауыржана Момышулы",
+      "to": "Село Кайнар",
+      "stops": [
+        {
+          "name_ru": "Станция метро Бауыржана Момышулы, начальная",
+          "name_kz": null,
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Улица Яссауи",
+          "name_kz": null,
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Косынова",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Аспандиярова",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "НИШ",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Административный центр Наурызбайского района",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ЖК Шугыла-City",
+          "name_kz": null,
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Нурлы / Сабденова",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "КГ Елисейские поля",
+          "name_kz": null,
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ЖК Alma City",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Жакыбаева",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Дала",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Нурлы",
+          "name_kz": null,
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Алтын Орда",
+          "name_kz": null,
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Посёлок Иргели",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Поворот на посёлок Райымбек",
+          "name_kz": null,
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи, 19-й км",
+          "name_kz": null,
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Кумтоган",
+          "name_kz": null,
+          "sequence": 20,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Долан",
+          "name_kz": null,
+          "sequence": 21,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Поворот",
+          "name_kz": null,
+          "sequence": 22,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СДУ",
+          "name_kz": null,
+          "sequence": 23,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Город Каскелен",
+          "name_kz": null,
+          "sequence": 24,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Чайная",
+          "name_kz": null,
+          "sequence": 25,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Автостанция",
+          "name_kz": null,
+          "sequence": 26,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Барибаева",
+          "name_kz": null,
+          "sequence": 27,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Кошек батыра",
+          "name_kz": null,
+          "sequence": 28,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Макашева",
+          "name_kz": null,
+          "sequence": 29,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Бейбарыс, Каскелен",
+          "name_kz": null,
+          "sequence": 30,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Саукеле",
+          "name_kz": null,
+          "sequence": 31,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Кольцо, Каскелен",
+          "name_kz": null,
+          "sequence": 32,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Шалкар",
+          "name_kz": null,
+          "sequence": 33,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Ушконыр",
+          "name_kz": null,
+          "sequence": 34,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Бекболат Ашекеев, конечная",
+          "name_kz": null,
+          "sequence": 35,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Село Кайнар, конечная",
+          "name_kz": null,
+          "sequence": 36,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true,
+          "stop_note": "Добавлена по публикации об изменении маршрута с 1 июля 2026 года. Точная платформа не подтверждена."
+        }
+      ],
+      "terminal_note": "С 1 июля 2026 маршрут продлён от села Бекболат Ашекеев до села Кайнар."
+    }
+  ],
+  "data_quality": {
+    "checked_on": "2026-11-21",
+    "2gis_check": "searched_for_route_stop_lists; no verifiable stop-platform coordinate dataset was available in the public indexed result",
+    "stop_sequence": "transcribed_from_published_route_lists_not_ground-truthed_in_field",
+    "coordinates": "unconfirmed_null",
+    "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
+    "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
+    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
+    "route_244_update_note": "Конечная Кайнар отражает опубликованное продление от 2026-07-01. Полная платформа остановки Кайнар и точные координаты не подтверждены."
+  },
+  "operational_notes": [
+    {
+      "date": "2026-07-01",
+      "effective_from": "2026-07-01",
+      "type": "route_extension_and_kaskelen_reroute",
+      "direction": "both",
+      "note": "По опубликованному сообщению маршрут №244 продлён от конечной «Бекболат Ашекеев» по улице Жанагасыр до села Кайнар. В направлении Кайнара проезд через Каскелен указан по улицам Абылай хана и Жибек Жолы. В обратном направлении: Жибек Жолы, Абылай хана, Байтурсынова, Карасай батыра, Абылай хана, далее по действующей схеме.",
+      "source": "https://www.fotobus.me/news.php?cid=126",
+      "source_publication_date": "2026-07-01"
+    }
+  ],
+  "sources": [
+    "https://ru.wikiroutes.info/almaty?routes=161490",
+    "https://yandex.kz/maps/ru/162/almaty/routes/bus_244/",
+    "https://www.fotobus.me/news.php?cid=126"
+  ]
+}

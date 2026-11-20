@@ -1,0 +1,792 @@
+{
+  "id": "212",
+  "name_ru": "Автобус 212, Алматы — Шамалган",
+  "name_kz": null,
+  "coordinate_system": "WGS84",
+  "directions": [
+    {
+      "id": "almaty_to_college",
+      "from": "ТРЦ Almaty Mall",
+      "to": "Колледж / Шамалган",
+      "stops": [
+        {
+          "name_ru": "ТРЦ Almaty Mall",
+          "name_kz": null,
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Улица Бутина",
+          "name_kz": null,
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Таугуль-3",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Шабыт",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Пролетарская",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Экспедиция Иле",
+          "name_kz": "Іле экспедициясы",
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Тау-Самал",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Бектембая",
+          "name_kz": null,
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Габдула Сланова",
+          "name_kz": null,
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Почтовое отделение №67",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Мечеть",
+          "name_kz": null,
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Мереке",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи Жетысу",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Детская больница Аксай",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Жандосова / Даулеткерея",
+          "name_kz": null,
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Центр обслуживания населения",
+          "name_kz": "Халыққа қызмет көрсету орталығы",
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи Весна",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Жана-Турмыс",
+          "name_kz": "Жаңа-Тұрмыс ауылы",
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Ак-Тилек",
+          "name_kz": "«Ақ-Тілек» базары",
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Аксай Саялы, село Кыргауылды",
+          "name_kz": null,
+          "sequence": 20,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": "Талап бойынша",
+          "sequence": 21,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Суюнбая, село Кыргауылды",
+          "name_kz": null,
+          "sequence": 22,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Восход",
+          "name_kz": null,
+          "sequence": 23,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Здоровье",
+          "name_kz": null,
+          "sequence": 24,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СТ Транспортник-88",
+          "name_kz": null,
+          "sequence": 25,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 26,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Мечеть",
+          "name_kz": null,
+          "sequence": 27,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Музей Анаға құрмет",
+          "name_kz": null,
+          "sequence": 28,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Конный клуб",
+          "name_kz": null,
+          "sequence": 29,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи Энергетик",
+          "name_kz": null,
+          "sequence": 30,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Автомобилист",
+          "name_kz": null,
+          "sequence": 31,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "30-й километр",
+          "name_kz": null,
+          "sequence": 32,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СО Береке-Фино",
+          "name_kz": null,
+          "sequence": 33,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Абая",
+          "name_kz": null,
+          "sequence": 34,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Алатау",
+          "name_kz": null,
+          "sequence": 35,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Школа",
+          "name_kz": null,
+          "sequence": 36,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Посёлок Жандосов",
+          "name_kz": null,
+          "sequence": 37,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Посёлок Жандосов, конечная",
+          "name_kz": null,
+          "sequence": 38,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Колледж, конечная",
+          "name_kz": null,
+          "sequence": 39,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        }
+      ]
+    },
+    {
+      "id": "college_to_almaty",
+      "from": "Колледж / Шамалган",
+      "to": "ТРЦ Almaty Mall",
+      "stops": [
+        {
+          "name_ru": "Колледж, конечная",
+          "name_kz": null,
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Посёлок Жандосов",
+          "name_kz": null,
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Посёлок Жандосов",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Алатау",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Темирбекова",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Абая",
+          "name_kz": null,
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СО Береке-Фино",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "30-й километр",
+          "name_kz": null,
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Автомобилист",
+          "name_kz": null,
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Долан",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Конный клуб",
+          "name_kz": null,
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Музей Анаға құрмет",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Мечеть",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": "Талап бойынша",
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СТ Транспортник-88",
+          "name_kz": null,
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СО Здоровье",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Восход",
+          "name_kz": null,
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Суюнбая, село Кыргауылды",
+          "name_kz": null,
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": "Талап бойынша",
+          "sequence": 20,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Аксай Саялы, село Кыргауылды",
+          "name_kz": null,
+          "sequence": 21,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Ак-Тилек",
+          "name_kz": "«Ақ-Тілек» базары",
+          "sequence": 22,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Жана-Турмыс",
+          "name_kz": "Жаңа-Тұрмыс ауылы",
+          "sequence": 23,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Садовое общество Коктем",
+          "name_kz": "«Көктем» саяжайы",
+          "sequence": 24,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Центр обслуживания населения",
+          "name_kz": "Халыққа қызмет көрсету орталығы",
+          "sequence": 25,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Жандосова / Бекешева",
+          "name_kz": null,
+          "sequence": 26,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Жандосова / Даулеткерея",
+          "name_kz": null,
+          "sequence": 27,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Детская больница Аксай",
+          "name_kz": null,
+          "sequence": 28,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи Жетысу",
+          "name_kz": null,
+          "sequence": 29,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Мереке",
+          "name_kz": null,
+          "sequence": 30,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Жандосова / Шонанулы",
+          "name_kz": null,
+          "sequence": 31,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Таусамалы",
+          "name_kz": null,
+          "sequence": 32,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Грозы",
+          "name_kz": "Гроза көшесі",
+          "sequence": 33,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Кунаева, микрорайон Таусамалы",
+          "name_kz": null,
+          "sequence": 34,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Бектембая",
+          "name_kz": null,
+          "sequence": 35,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Тау-Самал",
+          "name_kz": null,
+          "sequence": 36,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Пролетарская",
+          "name_kz": null,
+          "sequence": 37,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Таугуль-3",
+          "name_kz": "«Таугүл-3» ықшам ауданы",
+          "sequence": 38,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Таугуль",
+          "name_kz": "«Таугүл» ықшам ауданы",
+          "sequence": 39,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Саина",
+          "name_kz": "Саин көшесі",
+          "sequence": 40,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Таугуль-3",
+          "name_kz": null,
+          "sequence": 41,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Рыскулбекова",
+          "name_kz": "Рысқұлбеков көшесі",
+          "sequence": 42,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Рыскулбекова",
+          "name_kz": "Рысқұлбеков көшесі",
+          "sequence": 43,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ТРЦ Almaty Mall, конечная",
+          "name_kz": null,
+          "sequence": 44,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        }
+      ]
+    }
+  ],
+  "data_quality": {
+    "checked_on": "2026-11-21",
+    "2gis_check": "searched_for_route_stop_lists; no verifiable stop-platform coordinate dataset was available in the public indexed result",
+    "stop_sequence": "transcribed_from_published_route_lists_not_ground-truthed_in_field",
+    "coordinates": "unconfirmed_null",
+    "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
+    "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
+    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика."
+  },
+  "operational_notes": [
+    {
+      "date": "2026-08-27",
+      "effective_from": "2026-08-28",
+      "type": "temporary_detour_reported",
+      "direction": "westbound",
+      "note": "Kazinform сообщил о временном изменении западного направления 212 по улицам Жандосова — Кунаева — Рыскулова — Жандосова; восточное направление без изменений. Срок окончания в публикации не указан."
+    }
+  ],
+  "sources": [
+    "https://ru.wikiroutes.info/almaty?routes=57691",
+    "https://yandex.kz/maps/ru/162/almaty/routes/bus_212/",
+    "https://www.inform.kz/ru/shemi-pyati-avtobusnih-marshrutov-vremenno-izmenyat-valmati-ff84f889"
+  ]
+}

@@ -1,0 +1,442 @@
+{
+  "id": "230",
+  "name_ru": "Автобус 230, Алматы — Каскелен",
+  "name_kz": null,
+  "coordinate_system": "WGS84",
+  "directions": [
+    {
+      "id": "kaskelen_to_aksai1",
+      "from": "Кольцо, Каскелен",
+      "to": "Микрорайон Аксай-1",
+      "stops": [
+        {
+          "name_ru": "Кольцо, Каскелен, начальная",
+          "name_kz": null,
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Кольцо, Каскелен",
+          "name_kz": null,
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Шынгыстау",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Жазира",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Абая",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "По требованию",
+          "name_kz": null,
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Карасай батыра / Байгазиева",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Автостанция",
+          "name_kz": null,
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Алтын Аул",
+          "name_kz": null,
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Долан",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Село Кумтоган",
+          "name_kz": null,
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Дачи, 19-й км",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Мечеть",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Суюнбая",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Поворот на посёлок Райымбек",
+          "name_kz": null,
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ТЦ Апорт",
+          "name_kz": null,
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Тулпар",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Городская клиническая больница №7",
+          "name_kz": null,
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Жибек Жолы",
+          "name_kz": null,
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Автоцентр Daewoo",
+          "name_kz": null,
+          "sequence": 20,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Аккент",
+          "name_kz": null,
+          "sequence": 21,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Момышулы",
+          "name_kz": null,
+          "sequence": 22,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Момышулы",
+          "name_kz": null,
+          "sequence": 23,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Саина",
+          "name_kz": null,
+          "sequence": 24,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Саина",
+          "name_kz": null,
+          "sequence": 25,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Аксай-1, конечная",
+          "name_kz": "«Ақсай-1» ықшам ауданы",
+          "sequence": 26,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        }
+      ]
+    },
+    {
+      "id": "aksai1_to_kaskelen",
+      "from": "Микрорайон Аксай-1",
+      "to": "Кольцо, Каскелен",
+      "stops": [
+        {
+          "name_ru": "Микрорайон Аксай-1, начальная",
+          "name_kz": "«Ақсай-1» ықшам ауданы",
+          "sequence": 1,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        },
+        {
+          "name_ru": "Микрорайон Аксай-3",
+          "name_kz": "«Ақсай-3» ықшам ауданы",
+          "sequence": 2,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Момышулы",
+          "name_kz": null,
+          "sequence": 3,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Яссауи",
+          "name_kz": null,
+          "sequence": 4,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Оптовый магазин Арзан",
+          "name_kz": null,
+          "sequence": 5,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Арман",
+          "name_kz": null,
+          "sequence": 6,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Жибек Жолы",
+          "name_kz": null,
+          "sequence": 7,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Ауэзова, Калкаман",
+          "name_kz": "Әуезов көшесі (Қалқаман)",
+          "sequence": 8,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Микрорайон Калкаман",
+          "name_kz": "Қалқаман ықшам ауданы",
+          "sequence": 9,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "ТЦ Апорт",
+          "name_kz": null,
+          "sequence": 10,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Рынок Алтын Орда",
+          "name_kz": "«Алтын Орда» базары",
+          "sequence": 11,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Поворот",
+          "name_kz": null,
+          "sequence": 12,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "СДУ",
+          "name_kz": null,
+          "sequence": 13,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Город Каскелен",
+          "name_kz": null,
+          "sequence": 14,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Барибаева",
+          "name_kz": null,
+          "sequence": 15,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Кошек батыра",
+          "name_kz": null,
+          "sequence": 16,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Бейбарыс, Каскелен",
+          "name_kz": null,
+          "sequence": 17,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Улица Саукеле",
+          "name_kz": null,
+          "sequence": 18,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": false
+        },
+        {
+          "name_ru": "Кольцо, Каскелен, конечная",
+          "name_kz": null,
+          "sequence": 19,
+          "lat": null,
+          "lon": null,
+          "coordinate_status": "unconfirmed",
+          "terminal": true
+        }
+      ]
+    }
+  ],
+  "data_quality": {
+    "checked_on": "2026-11-21",
+    "2gis_check": "searched_for_route_stop_lists; no verifiable stop-platform coordinate dataset was available in the public indexed result",
+    "stop_sequence": "transcribed_from_published_route_lists_not_ground-truthed_in_field",
+    "coordinates": "unconfirmed_null",
+    "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
+    "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
+    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика."
+  },
+  "operational_notes": [],
+  "sources": [
+    "https://ru.wikiroutes.info/almaty?routes=90125",
+    "https://www.gov.kz/uploads/2023/2/3/7e37d126631fcd4dfa75bf6fc12012bc_original.1451689.pdf",
+    "https://yandex.kz/maps/ru/29458/kaskalen/routes/bus_230/"
+  ]
+}

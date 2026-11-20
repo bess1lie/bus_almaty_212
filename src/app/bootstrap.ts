@@ -13,7 +13,7 @@ import { CityWorld } from '../world/cityWorld';
 import { OsmTileProvider } from '../world/osmTileProvider';
 import { createEnvironment } from '../world/environment';
 import { createStreetProps } from '../world/streetProps';
-import { makeStreetTileProvider } from '../world/streetMetadata';
+import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
 
 const FIXED_DT = 1 / 60;
@@ -26,6 +26,7 @@ let clock: THREE.Clock;
 let bus: Bus;
 let cityWorld: CityWorld;
 let streetProps: ReturnType<typeof createStreetProps>;
+let streetMetadata: StreetMetadataProvider;
 let hud: HUD;
 
 let accumulator = 0;
@@ -92,16 +93,24 @@ async function main() {
 
   // 3. Город (CityWorld)
   setLoading('Загрузка города Алматы...', loadingTextEl);
+  streetMetadata = new StreetMetadataProvider({
+    publicBaseUrl: new URL(import.meta.env.BASE_URL, window.location.origin).href,
+  });
+
   cityWorld = new CityWorld(
     scene,
     chaseCam, // frustum считаем по камере (в кабине камера внутри GLB)
     new OsmTileProvider(),
     getPhysicsWorld(),
-    { onTileError: (x, z, e) => console.error(`[CityWorld] тайл ${x}_${z}:`, e) }
+    {
+      onTileError: (x, z, e) => console.error(`[CityWorld] тайл ${x}_${z}:`, e),
+      onTileLoaded: (x, z) => { void streetMetadata.notifyTileLoaded(x, z); },
+      onTileUnloaded: (x, z) => streetMetadata.removeTile(x, z),
+    }
   );
 
   // Уличные объекты (деревья, фонари, разметка, остановки)
-  streetProps = createStreetProps(scene, makeStreetTileProvider(cityWorld));
+  streetProps = createStreetProps(scene, streetMetadata.tileKeyProvider);
 
   // 4. Автобус — стартуем без ожидания GLB
   setLoading('Посадка за руль...', loadingTextEl);

@@ -41,6 +41,8 @@ export interface CityWorldFrame {
 export interface CityWorldOptions {
   tileSize?: number;
   onTileError?: (x: number, z: number, error: unknown) => void;
+  onTileLoaded?: (x: number, z: number) => void;
+  onTileUnloaded?: (x: number, z: number) => void;
 }
 
 interface BuildingRuntime {
@@ -77,6 +79,8 @@ export class CityWorld {
   private readonly keep = new Set<string>();
   private readonly material: THREE.MeshStandardMaterial;
   private readonly onError?: CityWorldOptions['onTileError'];
+  private readonly onLoaded?: CityWorldOptions['onTileLoaded'];
+  private readonly onUnloaded?: CityWorldOptions['onTileUnloaded'];
   private readonly geom = new THREE.BoxGeometry(1, 1, 1);
   private streamTimer = 0;
   private disposed = false;
@@ -90,6 +94,8 @@ export class CityWorld {
   ) {
     this.tileSize = options.tileSize ?? CITY_TILE_SIZE;
     this.onError = options.onTileError;
+    this.onLoaded = options.onTileLoaded;
+    this.onUnloaded = options.onTileUnloaded;
     this.material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 });
   }
 
@@ -247,6 +253,7 @@ export class CityWorld {
       ),
       inFrustum: true,
     });
+    this.onLoaded?.(x, z);
   }
 
   private removeTile(key: string) {
@@ -264,6 +271,7 @@ export class CityWorld {
       }
     });
     this.tiles.delete(key);
+    this.onUnloaded?.(tile.x, tile.z);
   }
 
   dispose() {

@@ -132,6 +132,10 @@ export class BusVisual {
 
     this.steeringWheel = requiredObject(root, 'steering_wheel');
     this.steeringWheelRestZ = this.steeringWheel.rotation.z;
+    // Поднимаем руль, чтобы он читался в кабине (иначе уходит за низ экрана).
+    this.steeringWheel.position.y += 0.42;
+    this.steeringWheel.position.z += 0.12;
+    this.steeringWheel.scale.setScalar(0.7);
     this.mirrorCamLeft = requiredObject(root, 'mirror_cam_left');
     this.mirrorCamRight = requiredObject(root, 'mirror_cam_right');
     this.doorHingeLeft = requiredObject(root, 'door_hinge_left');

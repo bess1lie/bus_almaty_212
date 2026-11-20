@@ -7,14 +7,15 @@ import * as THREE from 'three';
 
 export function createEnvironment(scene: THREE.Scene) {
   // Небо — градиент через большой купол с вершинными цветами
-  const skyGeo = new THREE.SphereGeometry(1800, 24, 12);
+  const SKY_R = 2500;
+  const skyGeo = new THREE.SphereGeometry(SKY_R, 32, 16);
   const colors: number[] = [];
   const pos = skyGeo.getAttribute('position');
-  const top = new THREE.Color(0x2a3a5c);
-  const horizon = new THREE.Color(0xe8a46c); // тёплый закат
+  const top = new THREE.Color(0x1f2e52);
+  const horizon = new THREE.Color(0xf0a866); // тёплый закат
   const bottom = new THREE.Color(0x6b5a52);
   for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i) / 1800;
+    const y = pos.getY(i) / SKY_R;
     let c: THREE.Color;
     if (y > 0) c = horizon.clone().lerp(top, Math.min(1, y * 1.5));
     else c = horizon.clone().lerp(bottom, Math.min(1, -y * 2));
@@ -23,7 +24,7 @@ export function createEnvironment(scene: THREE.Scene) {
   skyGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   const sky = new THREE.Mesh(
     skyGeo,
-    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false })
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false, fog: false })
   );
   sky.name = 'sky';
   scene.add(sky);

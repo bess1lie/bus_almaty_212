@@ -44,6 +44,7 @@ let passengers: PassengerService;
 let shift: ShiftManager;
 let hud: HUD;
 let lastPos: THREE.Vector3 | null = null;
+const _tmpCamPos = new THREE.Vector3();
 let lastSpeed = 0;
 
 let accumulator = 0;
@@ -395,7 +396,7 @@ function animate(time: number) {
     const jerk = Math.abs(bus.getSpeedKmh() - lastSpeed) / 3.6;
     shift.tick(dm, jerk);
   }
-  lastPos = pos.clone();
+  if (lastPos) lastPos.copy(pos); else lastPos = pos.clone();
   lastSpeed = bus.getSpeedKmh();
   const vel = bus.getLinearVelocity();
   const fwd = bus.getForward();
@@ -404,7 +405,7 @@ function animate(time: number) {
   // Камера для уличных объектов (мировая позиция)
   const activeCamTmp = currentMode === 'driver' ? camera : chaseCam;
   activeCamTmp.updateMatrixWorld();
-  streetProps.update(activeCamTmp.getWorldPosition(new THREE.Vector3()));
+  streetProps.update(activeCamTmp.getWorldPosition(_tmpCamPos));
   scene.userData.busPosition = pos;
   scene.userData.busQuaternion = bus.body.rotation();
   scene.userData.isNight = scene.userData.timeOfDay === 'night';

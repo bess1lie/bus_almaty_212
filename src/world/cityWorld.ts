@@ -121,6 +121,7 @@ const _up = new THREE.Vector3(0, 1, 0);
 const _frustum = new THREE.Frustum();
 const _pv = new THREE.Matrix4();
 const _cam = new THREE.Vector3();
+const _ahead = new THREE.Vector3();
 
 function countTriangles(object: THREE.Object3D | null): number {
   if (!object) return 0;
@@ -223,7 +224,7 @@ export class CityWorld {
     const px = frame.position.x;
     const pz = frame.position.z;
     const speed = Math.hypot(frame.velocity.x, frame.velocity.z);
-    const ahead = new THREE.Vector3();
+    const ahead = _ahead;
     if (speed > 1) ahead.set(frame.velocity.x, 0, frame.velocity.z).normalize();
     else ahead.copy(frame.forward);
     const aheadDist = Math.min(9000, 1500 + speed * 12);

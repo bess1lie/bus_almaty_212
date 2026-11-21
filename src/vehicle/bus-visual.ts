@@ -65,10 +65,19 @@ export async function createBusVisual(
   const cameraDriver = requiredObject(busRoot, 'camera_driver');
 
   const enableShadows = options.enableShadows ?? true;
+  const dashboardMaterials: THREE.Material[] = [];
   gltf.scene.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     object.castShadow = enableShadows;
     object.receiveShadow = enableShadows;
+
+    // Приборная панель и валидатор подсвечиваются ночью
+    if (/speedometer|tachometer|validator|instrument|route_display/i.test(object.name)) {
+      const mats = Array.isArray(object.material) ? object.material : [object.material];
+      for (const m of mats) {
+        if (!dashboardMaterials.includes(m)) dashboardMaterials.push(m);
+      }
+    }
 
     const materials = Array.isArray(object.material)
       ? object.material
@@ -110,6 +119,7 @@ export async function createBusVisual(
 
   try {
     const visual = new BusVisual(gltf.scene, busRoot, yawRig, pitchRig, rollRig);
+    visual.setDashboardMaterials(dashboardMaterials);
     scene.userData.busRoot = busRoot;
     scene.userData.busPosition = busRoot.position;
     scene.userData.busQuaternion = busRoot.quaternion;
@@ -133,7 +143,10 @@ export class BusVisual {
   private readonly pitchRig: THREE.Group;
   private readonly rollRig: THREE.Group;
   private cameraRoll = 0;
+  private dashboardMaterials: THREE.Material[] = [];
   private readonly steeringWheel: THREE.Object3D;
+  private readonly speedNeedle: THREE.Object3D | null;
+  private readonly tachNeedle: THREE.Object3D | null;
   private readonly wheels: WheelBinding[];
   private readonly doorLeaves: DoorLeafBinding[];
   private doorOpenAmount = 0;
@@ -160,6 +173,9 @@ export class BusVisual {
     this.steeringWheel.position.y = STEERING_WHEEL_TARGET_Y;
     this.steeringWheel.scale.setScalar(STEERING_WHEEL_SCALE);
     this.steeringWheelRestZ = this.steeringWheel.rotation.z;
+    // Стрелки приборов (опционально — если модель их содержит)
+    this.speedNeedle = root.getObjectByName('speedometer_needle') ?? null;
+    this.tachNeedle = root.getObjectByName('tachometer_needle') ?? null;
     this.mirrorCamLeft = requiredObject(root, 'mirror_cam_left');
     this.mirrorCamRight = requiredObject(root, 'mirror_cam_right');
     this.doorHingeLeft = requiredObject(root, 'door_hinge_left');
@@ -216,6 +232,10 @@ export class BusVisual {
   }
 
   /** yaw и pitch в радианах. Нулевое направление взгляда — вперёд, по -Z. */
+  setDashboardMaterials(materials: THREE.Material[]): void {
+    this.dashboardMaterials = materials;
+  }
+
   setLook(yaw: number, pitch: number): void {
     this.yawRig.rotation.y = Number.isFinite(yaw) ? yaw : 0;
     this.pitchRig.rotation.x = THREE.MathUtils.clamp(
@@ -292,6 +312,25 @@ export class BusVisual {
 
     this.steeringWheel.rotation.z =
       this.steeringWheelRestZ - steer * MAX_STEERING_WHEEL_RAD;
+
+    // Анимация стрелок: скорость 0..90 км/ч -> -80°..+80°, тахометр по нагрузке
+    const kmh = Math.abs(this.velocity.length()) * 3.6;
+    const speedAngle = THREE.MathUtils.degToRad(80) * (1 - Math.min(1, kmh / 90) * 2);
+    if (this.speedNeedle) this.speedNeedle.rotation.z = speedAngle;
+    const rpm = THREE.MathUtils.clamp(kmh / 60, 0, 1);
+    const tachAngle = THREE.MathUtils.degToRad(80) * (1 - rpm * 2);
+    if (this.tachNeedle) this.tachNeedle.rotation.z = tachAngle;
+
+    // Ночью подсвечиваем приборы тёплым светом
+    const night = this.sceneObject.userData?.isNight === true
+      || (this.sceneObject.parent?.userData?.isNight === true);
+    for (const m of this.dashboardMaterials) {
+      const sm = m as THREE.MeshStandardMaterial;
+      if (sm.emissive) {
+        sm.emissive.setHex(0xffae5e);
+        sm.emissiveIntensity = night ? 0.55 : 0;
+      }
+    }
 
     const animationDt = Math.min(dt, 0.1);
     this.doorOpenAmount = THREE.MathUtils.damp(

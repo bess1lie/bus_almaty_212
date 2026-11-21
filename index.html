@@ -52,6 +52,15 @@
 
     <div id="trip-panel"></div>
 
+    <div id="shift-result" style="display:none; position:fixed; inset:0; background:rgba(10,15,20,.85); z-index:80; align-items:center; justify-content:center;">
+      <div style="background:#101e23; border:1px solid #55c4b6; border-radius:12px; padding:28px 34px; min-width:320px; color:#e8f5f1; font:14px/1.6 system-ui,sans-serif;">
+        <div style="font-size:12px; letter-spacing:3px; color:#9ab;">ИТОГИ СМЕНЫ</div>
+        <h2 id="result-grade" style="margin:8px 0 16px; color:#55c4b6; font-size:26px;">Отлично</h2>
+        <div id="result-body"></div>
+        <button type="button" data-action="new-shift" style="margin-top:18px; width:100%; padding:12px; background:#55c4b6; color:#0b1519; border:none; border-radius:8px; font-weight:700; cursor:pointer;">НОВАЯ СМЕНА</button>
+      </div>
+    </div>
+
     <!-- UI Kit: HUD + главное меню -->
     <div class="game-ui is-menu-open" data-theme="sunset" id="game-ui">
       <section class="hud" aria-label="Игровой интерфейс">
@@ -107,6 +116,7 @@
           <div class="menu-actions">
             <button class="menu-button primary" type="button" data-action="free-ride"><span>Свободная езда</span><span class="menu-arrow">↗</span></button>
             <button class="menu-button" type="button" data-action="lines"><span>Линии</span><span class="menu-arrow">›</span></button>
+            <button class="menu-button" type="button" data-action="finish-shift"><span>Завершить смену</span><span class="menu-arrow">✓</span></button>
             <button class="menu-button" type="button" data-action="drive-mode"><span>Режим: Аркада</span><span class="menu-arrow">⇄</span></button>
             <button class="menu-button" type="button" data-action="settings"><span>Настройки</span><span class="menu-arrow">›</span></button>
           </div>

@@ -17,6 +17,7 @@ import { createTraffic } from '../world/traffic';
 import { RouteTracker } from '../gameplay/routeTracker';
 import { ROUTES } from '../gameplay/routes';
 import { PassengerService } from '../gameplay/passengers';
+import { ShiftManager } from '../gameplay/shift';
 import { createStreetProps } from '../world/streetProps';
 import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
@@ -40,7 +41,10 @@ let telemetry: Telemetry;
 let basePixelRatio = 1;
 let routeTracker: RouteTracker;
 let passengers: PassengerService;
+let shift: ShiftManager;
 let hud: HUD;
+let lastPos: THREE.Vector3 | null = null;
+let lastSpeed = 0;
 
 let accumulator = 0;
 let lastHudTime = 0;
@@ -145,6 +149,7 @@ async function main() {
   setupLookControl(renderer.domElement);
   hud = new HUD();
   passengers = new PassengerService();
+  shift = new ShiftManager();
   setupMenuButtons();
 
   // Маршруты: загружаем индекс остановок в фоне
@@ -205,6 +210,28 @@ function setupLookControl(dom: HTMLElement) {
   });
 }
 
+function showShiftResult() {
+  const r = shift.finish();
+  if (!r) return;
+  const el = document.getElementById('shift-result')!;
+  el.style.display = 'flex';
+  document.getElementById('result-grade')!.textContent = `${r.grade} · ${r.score}/100`;
+  document.getElementById('result-body')!.innerHTML = `
+    <div>Маршрут: <strong>${r.routeId}</strong> · ${r.onTime ? 'вовремя' : `опоздание ${Math.floor(r.delaySec / 60)} мин`}</div>
+    <div>Обслужено остановок: <strong>${r.stopsServed}</strong></div>
+    <div>Плавность езды: <strong>${r.drivingScore}/100</strong></div>
+    <div>Расстояние: <strong>${(r.totalDistanceM / 1000).toFixed(1)} км</strong></div>
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.15);">
+      Награда: <strong style="color:#f3a35f;">+${r.reward} ₸</strong>
+    </div>
+    <div style="font-size:12px; color:#91aaa6; margin-top:8px;">
+      Всего смен: ${shift.saved.shiftsDone} · Заработано: ${shift.saved.totalReward} ₸ · Лучший результат: ${shift.saved.bestScore}
+    </div>
+    <div style="font-size:12px; color:#61d0bf; margin-top:6px;">${shift.saved.medals.join(' · ')}</div>
+  `;
+  console.info('[shift] итоги:', r);
+}
+
 function setupMenuButtons() {
   // Кнопки выбора линии
   document.querySelectorAll<HTMLElement>('[data-route]').forEach((btn) => {
@@ -214,7 +241,10 @@ function setupMenuButtons() {
       const route = id ? ROUTES.find((r) => r.id === id) : undefined;
       if (route) {
         routeTracker.selectRoute(route, 0);
-        hud.setRoute(route.id, route.directions[0]?.to ?? route.name_ru, 0);
+        const dir = route.directions[0];
+        hud.setRoute(route.id, dir?.to ?? route.name_ru, 0);
+        shift.start(route.id, dir?.stops.length ?? 10, (dir?.stops.length ?? 10) * 450);
+        lastPos = bus.getPosition();
         hud.startGame();
         console.info('[routes] выбрана линия', route.id, route.name_ru);
       }
@@ -240,6 +270,13 @@ function setupMenuButtons() {
         case 'camera':
           currentMode = currentMode === 'chase' ? 'driver' : 'chase';
           bus.setCameraMode(currentMode);
+          break;
+        case 'finish-shift':
+          showShiftResult();
+          break;
+        case 'new-shift':
+          document.getElementById('shift-result')!.style.display = 'none';
+          document.querySelector('.game-ui')!.classList.add('is-menu-open');
           break;
         case 'drive-mode': {
           const next = bus.getDriveMode() === 'arcade' ? 'sim' : 'arcade';
@@ -353,6 +390,13 @@ function animate(time: number) {
   bus.syncVisual(frameDt, merged.steering, chaseCam);
 
   const pos = bus.getPosition();
+  if (lastPos && shift.state.active) {
+    const dm = pos.distanceTo(lastPos);
+    const jerk = Math.abs(bus.getSpeedKmh() - lastSpeed) / 3.6;
+    shift.tick(dm, jerk);
+  }
+  lastPos = pos.clone();
+  lastSpeed = bus.getSpeedKmh();
   const vel = bus.getLinearVelocity();
   const fwd = bus.getForward();
   cityWorld.update({ position: pos, velocity: vel, forward: fwd, deltaSeconds: frameDt, activeCamera: currentMode === 'driver' ? camera : chaseCam });
@@ -374,7 +418,8 @@ function animate(time: number) {
     if (progress) {
       hud.setRoute(progress.routeId, progress.nextStop, progress.distanceM);
       const atStop = progress.distanceM < 30;
-      passengers.update(0.1, atStop, bus.getSpeedKmh(), input.handbrake, bus.doorsOpen, progress.currentStop);
+      const justServed = passengers.update(0.1, atStop, bus.getSpeedKmh(), input.handbrake, bus.doorsOpen, progress.currentStop);
+      if (justServed) shift.onStopServed();
       const st = passengers.state;
       hud.updateTrip({
         onboard: st.onboard, capacity: st.capacity, score: st.score,

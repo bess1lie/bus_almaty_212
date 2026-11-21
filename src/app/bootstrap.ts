@@ -87,6 +87,8 @@ async function main() {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
 
+  createCityGround(scene);
+
   // Единая система света — только в createEnvironment()
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // ACES слишком гасит тёмные тона low-poly сцены — оставляем прямой вывод
@@ -172,6 +174,20 @@ async function main() {
       console.warn('[bus] GLB не загружен — внешняя камера');
     }
   });
+}
+
+function createCityGround(scene: THREE.Scene): THREE.Mesh {
+  const geometry = new THREE.PlaneGeometry(60000, 60000);
+  geometry.rotateX(-Math.PI / 2);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x596052, roughness: 1, metalness: 0,
+  });
+  const ground = new THREE.Mesh(geometry, material);
+  ground.name = 'city-ground';
+  ground.position.y = -0.03;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  return ground;
 }
 
 function setLoading(text: string, el: HTMLElement) {

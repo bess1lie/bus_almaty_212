@@ -15,14 +15,14 @@ const BUS_WIDTH = 2.5;
 const BODY_H = 3.05;
 const BODY_HALF = BODY_H / 2;
 
-const MAX_SPEED = 22;      // м/с (~80 км/ч)
-const REVERSE_MAX = 6;     // м/с (~22 км/ч)
-const MAX_STEER = 0.42;    // рад (~24°)
+const MAX_SPEED = 25;      // м/с (~90 км/ч)
+const REVERSE_MAX = 7;     // м/с (~25 км/ч)
+const MAX_STEER = 0.48;    // рад (~27°)
 
 // Тяжёлый автобус (по аудиту симуляторов)
-const REVERSE_ACCEL = 0.75;
-const HANDBRAKE_DECEL = 4.2;
-const COAST_DRAG = 0.22;
+const REVERSE_ACCEL = 1.4;
+const HANDBRAKE_DECEL = 6.5;
+const COAST_DRAG = 0.35;
 const WHEELBASE = 6.2;
 
 function moveTowards(current: number, target: number, maxDelta: number): number {
@@ -50,8 +50,8 @@ interface DriveTuning {
 }
 
 const TUNING: Record<DriveMode, DriveTuning> = {
-  arcade: { accel: 2.4, gasTau: 0.30, brake: 3.0, steerTau: 0.22, yawRate: 0.62, brakeFade: 0.08 },
-  sim: { accel: 2.0, gasTau: 0.45, brake: 2.6, steerTau: 0.30, yawRate: 0.55, brakeFade: 0.15 },
+  arcade: { accel: 3.2, gasTau: 0.16, brake: 4.8, steerTau: 0.13, yawRate: 0.78, brakeFade: 0.05 },
+  sim: { accel: 2.2, gasTau: 0.32, brake: 3.4, steerTau: 0.22, yawRate: 0.66, brakeFade: 0.12 },
 };
 
 export class Bus {
@@ -94,7 +94,7 @@ export class Bus {
     // Физическое тело: только поворот вокруг Y, без крена (стабильно)
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setLinearDamping(0.0)
-      .setAngularDamping(4.0)
+      .setAngularDamping(0.8)
       .enabledRotations(false, true, false);
     this.body = world.createRigidBody(bodyDesc);
 
@@ -234,7 +234,7 @@ export class Bus {
     const forwardSpeed = this.planarVelocity.dot(this.forwardTmp);
     this.lateralVelocity.copy(this.planarVelocity)
       .addScaledVector(this.forwardTmp, -forwardSpeed)
-      .multiplyScalar(Math.exp(-dt * 2.2));
+      .multiplyScalar(Math.exp(-dt * 5.0));
     this.planarVelocity.copy(this.forwardTmp).multiplyScalar(this.speed).add(this.lateralVelocity);
     this.body.setLinvel({ x: this.planarVelocity.x, y: 0, z: this.planarVelocity.z }, true);
 

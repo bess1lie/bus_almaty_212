@@ -106,6 +106,9 @@ function makeFacadeGeometry(kind: BuildingKind): THREE.BufferGeometry {
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute([...body.uvs, ...litWindows.uvs], 2));
   geometry.addGroup(0, bodyCount, 0);
   if (windowCount > 0) geometry.addGroup(bodyCount, windowCount, 1);
+  // КЛЮЧЕВОЙ ФИКС: фасадная геометрия была 0..1, а матрица considers center.
+  // Сдвигаем в -0.5..+0.5 — теперь и box LOD, и facade LOD стоят на земле одинаково.
+  geometry.translate(0, -0.5, 0);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   geometry.userData.buildingKind = kind;
@@ -372,6 +375,24 @@ function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
   return g;
 }
 
+const DRIVABLE_ROADS = new Set([
+  'motorway', 'motorway_link', 'trunk', 'trunk_link',
+  'primary', 'primary_link', 'secondary', 'secondary_link',
+  'tertiary', 'tertiary_link', 'unclassified', 'residential',
+  'living_street', 'service', 'road', 'track',
+]);
+
+function isValidBuildingPolygon(poly: unknown): poly is Point2[] {
+  return Array.isArray(poly)
+    && poly.length >= 3
+    && poly.every((p) =>
+      Array.isArray(p)
+      && p.length >= 2
+      && Number.isFinite(Number(p[0]))
+      && Number.isFinite(Number(p[1]))
+    );
+}
+
 export class OsmTileProvider implements CityTileProvider {
   private readonly jsonCache = new Map<string, Promise<TileJson>>();
   private readonly facadeCache = new Map<BuildingKind, THREE.BufferGeometry>();
@@ -396,7 +417,10 @@ export class OsmTileProvider implements CityTileProvider {
 
     for (let i = 0; i < (data.buildings?.length ?? 0); i++) {
       const b = data.buildings![i];
-      if (!b.poly || b.poly.length < 3) continue;
+      if (!isValidBuildingPolygon(b.poly)) {
+        console.warn(`[OSM] Invalid building polygon: ${key}#${i}`);
+        continue;
+      }
       let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
       for (const [x, z] of b.poly) {
         minX = Math.min(minX, x); maxX = Math.max(maxX, x);
@@ -407,18 +431,29 @@ export class OsmTileProvider implements CityTileProvider {
       const rawHeight = positiveNumber(b.h) ?? 10;
       const kind = classifyBuilding(b.type, rawHeight);
       const height = buildingHeight(b, kind);
+      const localX = (minX + maxX) * 0.5 - originX;
+      const localZ = (minZ + maxZ) * 0.5 - originZ;
+      const valid = [minX, maxX, minZ, maxZ, width, depth, localX, localZ, height].every(Number.isFinite)
+        && width >= 0.5 && depth >= 0.5
+        && width <= TILE_SIZE + 1 && depth <= TILE_SIZE + 1
+        && localX >= -1 && localX <= TILE_SIZE + 1
+        && localZ >= -1 && localZ <= TILE_SIZE + 1;
+      if (!valid) {
+        console.warn(`[OSM] Invalid building dimensions: ${key}#${i}`);
+        continue;
+      }
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
       // P0 batching: ОДНА общая геометрия на тип здания (4 штуки на игру).
       // Индивидуальная форма/размер/цвет задаются instanceMatrix + instanceColor.
       // Уникальные footprint'ы отключаем — они рвали InstancedMesh на сотни батчей.
       const facade = this.getFacade(kind);
       const source: BuildingSource = {
-        position: new THREE.Vector3((minX + maxX) * 0.5 - originX, 0, (minZ + maxZ) * 0.5 - originZ),
+        position: new THREE.Vector3(localX, 0, localZ),
         size: new THREE.Vector3(width, height, depth),
         color: buildingColor(kind, seed),
         rotationY: 0,
         geometry: facade,
-        collidable: false,
+        collidable: true,
       };
       candidates.push({ source, score: width * depth * (1 + height / 60) });
     }
@@ -432,12 +467,14 @@ export class OsmTileProvider implements CityTileProvider {
     return {
       buildings,
       roads,
-      roadLines: stitched.map((r) => ({
-        poly: r.poly,
-        oneWay: r.oneWay,
-        speed: r.speed,
-        lanes: r.lanes,
-      })),
+      roadLines: stitched
+        .filter((r) => DRIVABLE_ROADS.has(r.type ?? r.t ?? ''))
+        .map((r) => ({
+          poly: r.poly,
+          oneWay: r.oneWay,
+          speed: r.speed,
+          lanes: r.lanes,
+        })),
     };
   }
 

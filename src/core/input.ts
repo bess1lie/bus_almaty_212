@@ -125,7 +125,10 @@ function pollGamepad() {
 
   // Триггеры Xbox: axis 5 — R2 (газ), axis 2 — L2 (тормоз). Значения от -1 до 1.
   const gasRaw = gp.axes[5] ?? -1;
-  const brakeRaw = gp.axes[2] ?? -1;
+  // Стандартный mapping: LT = axes[4]; нестандартные рули — axes[2].
+  const brakeRaw = gp.mapping === 'standard'
+    ? (gp.axes[4] ?? -1)
+    : (gp.axes[2] ?? -1);
   pad.throttle = gasRaw > -0.8 ? Math.max(0, (gasRaw + 1) / 2) : 0;
   pad.brake = brakeRaw > -0.8 ? Math.max(0, (brakeRaw + 1) / 2) : 0;
 

@@ -16,13 +16,17 @@ export const CITY_DETAIL_DISTANCE = 300;
 export const CITY_HIDDEN_DISTANCE = 1500;
 export const CITY_MAX_TILE_TRIANGLES = 30_000;
 
-/** Упрощённый граф дорог для трафика и маршрутов. */
+interface RoadEdge { id: number; a: number; b: number; oneWay: boolean; speed: number; lanes: number; }
+
+/** Граф дорог: стабильные ID рёбер + сантиметровая привязка узлов. */
 export class RoadGraph {
   readonly nodes: Array<[number, number]> = [];
-  readonly edges: Array<{ a: number; b: number; oneWay: boolean; speed: number; lanes: number }> = [];
+  readonly edges: RoadEdge[] = [];
   private readonly idx = new Map<string, number>();
+  private nextEdgeId = 1;
   private readonly index = (x: number, z: number): number => {
-    const k = `${Math.round(x / 8)},${Math.round(z / 8)}`;
+    // 0.01 м — генератор округляет OSM-координаты до сантиметра.
+    const k = `${Math.round(x * 100)},${Math.round(z * 100)}`;
     const e = this.idx.get(k);
     if (e !== undefined) return e;
     const i = this.nodes.length;
@@ -36,15 +40,16 @@ export class RoadGraph {
       const a = this.index(poly[i][0], poly[i][1]);
       const b = this.index(poly[i + 1][0], poly[i + 1][1]);
       if (a === b) continue;
-      added.push(this.edges.length);
-      this.edges.push({ a, b, oneWay, speed, lanes });
+      const id = this.nextEdgeId++;
+      this.edges.push({ id, a, b, oneWay, speed, lanes });
+      added.push(id);
     }
     return added;
   }
-  removeEdges(indices: number[]) {
-    // удаляем с конца, чтобы индексы не съехали
-    for (const i of [...indices].sort((a, b) => b - a)) {
-      this.edges.splice(i, 1);
+  removeEdges(ids: number[]) {
+    const remove = new Set(ids);
+    for (let i = this.edges.length - 1; i >= 0; i--) {
+      if (remove.has(this.edges[i].id)) this.edges.splice(i, 1);
     }
   }
   nearest(x: number, z: number): number {
@@ -144,6 +149,7 @@ export class CityWorld {
   private readonly tileSize: number;
   private readonly tiles = new Map<string, TileRuntime>();
   private readonly pending = new Set<string>();
+  private readonly readyTiles: Array<{ x: number; z: number; key: string; payload: CityTilePayload }> = [];
   private readonly keep = new Set<string>();
   private readonly boxMaterial: THREE.MeshStandardMaterial;
   private readonly shadowMaterial: THREE.MeshBasicMaterial;
@@ -213,6 +219,10 @@ export class CityWorld {
 
     this.windowMaterial.emissiveIntensity = this.scene.userData.isNight === true ? 1.2 : 0;
 
+    // Не более одного тяжёлого addTile за кадр
+    const ready = this.readyTiles.shift();
+    if (ready) this.addTile(ready.x, ready.z, ready.key, ready.payload, frame.position);
+
     const frustumCam = (frame.activeCamera as THREE.PerspectiveCamera) ?? this.camera;
     frustumCam.updateMatrixWorld();
     _pv.multiplyMatrices(frustumCam.projectionMatrix, frustumCam.matrixWorldInverse);
@@ -254,15 +264,16 @@ export class CityWorld {
     this.keep.clear();
     for (const k of want) this.keep.add(k);
 
-    let inFlight = 0;
+    const MAX_PENDING = 2;
     for (const key of want) {
       if (this.tiles.has(key) || this.pending.has(key)) continue;
-      if (inFlight >= 2) break;
-      inFlight++;
+      if (this.pending.size >= MAX_PENDING) break;
       this.pending.add(key);
       const [sx, sz] = key.split('_').map(Number);
       this.provider.loadTile(sx, sz)
-        .then((payload) => this.addTile(sx, sz, key, payload, frame.position))
+        .then((payload) => {
+          if (!this.disposed) this.readyTiles.push({ x: sx, z: sz, key, payload });
+        })
         .catch((err) => this.onError?.(sx, sz, err))
         .finally(() => this.pending.delete(key));
     }
@@ -355,6 +366,7 @@ export class CityWorld {
       let made = 0;
       for (const b of buildings) {
         if (made >= 40) break;
+        if (b.source.collidable === false) continue;
         if (b.source.size.x < 8 || b.source.size.z < 8 || b.source.size.y < 6) continue;
         const wx = root.position.x + b.source.position.x;
         const wz = root.position.z + b.source.position.z;

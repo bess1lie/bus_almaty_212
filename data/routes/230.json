@@ -49,21 +49,25 @@
           "name_ru": "Улица Абая",
           "name_kz": null,
           "sequence": 5,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2834813,
+          "lon": 77.2186237,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14274296312",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 6,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Карасай батыра / Байгазиева",
@@ -78,11 +82,13 @@
           "name_ru": "Автостанция",
           "name_kz": null,
           "sequence": 8,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2349274,
+          "lon": 76.8158729,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "12533370339",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Алтын Аул",
@@ -115,21 +121,25 @@
           "name_ru": "Дачи, 19-й км",
           "name_kz": null,
           "sequence": 12,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2238775,
+          "lon": 76.7221263,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "14308357088",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Мечеть",
           "name_kz": null,
           "sequence": 13,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2263154,
+          "lon": 76.8913757,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 18
+          "osm_stop_id": "13277719422",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Суюнбая",
@@ -153,31 +163,37 @@
           "name_ru": "ТЦ Апорт",
           "name_kz": null,
           "sequence": 16,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2312387,
+          "lon": 76.7800868,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 3
+          "osm_stop_id": "8435139505",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Микрорайон Тулпар",
           "name_kz": null,
           "sequence": 17,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2327803,
+          "lon": 76.7906937,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "12407281427",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Городская клиническая больница №7",
           "name_kz": null,
           "sequence": 18,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2344486,
+          "lon": 76.8002364,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "12235159968",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Рынок Жибек Жолы",
@@ -201,11 +217,13 @@
           "name_ru": "Микрорайон Аккент",
           "name_kz": null,
           "sequence": 21,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2399048,
+          "lon": 76.8143,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "6466427085",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Момышулы",
@@ -220,31 +238,37 @@
           "name_ru": "Момышулы",
           "name_kz": null,
           "sequence": 23,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2167722,
+          "lon": 76.8401896,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 13
+          "osm_stop_id": "4819948674",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Саина",
           "name_kz": null,
           "sequence": 24,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2856014,
+          "lon": 76.830775,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14278921987",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Саина",
           "name_kz": null,
           "sequence": 25,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2856014,
+          "lon": 76.830775,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14278921987",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Микрорайон Аксай-1, конечная",
@@ -287,21 +311,25 @@
           "name_ru": "Момышулы",
           "name_kz": null,
           "sequence": 3,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2167722,
+          "lon": 76.8401896,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 13
+          "osm_stop_id": "4819948674",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Яссауи",
           "name_kz": null,
           "sequence": 4,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2148932,
+          "lon": 76.8297484,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "9342478955",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Оптовый магазин Арзан",
@@ -343,21 +371,25 @@
           "name_ru": "Микрорайон Калкаман",
           "name_kz": "Қалқаман ықшам ауданы",
           "sequence": 9,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2060845,
+          "lon": 76.8287367,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "9791558659",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "ТЦ Апорт",
           "name_kz": null,
           "sequence": 10,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2312387,
+          "lon": 76.7800868,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 3
+          "osm_stop_id": "8435139505",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Рынок Алтын Орда",
@@ -381,11 +413,13 @@
           "name_ru": "СДУ",
           "name_kz": null,
           "sequence": 13,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2094505,
+          "lon": 76.6695895,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14066955742",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Город Каскелен",
@@ -453,11 +487,11 @@
     "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
     "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
     "osm_coordinate_enrichment": {
-      "checked_at": "2026-11-20T21:22:05.565Z",
+      "checked_at": "2026-11-21T06:39:51.972Z",
       "source": "public/map/v1/stops-index.json",
       "matching": "exact normalized route stop name against OSM name:ru/name:kk/name; unique OSM element only",
-      "updated": 1,
-      "ambiguous": 17,
+      "updated": 18,
+      "ambiguous": 0,
       "unmatched": 27,
       "note": "No geocoding or street-centroid fallback. Ambiguous and unmatched route coordinates remain null."
     }

@@ -76,21 +76,25 @@
           "name_ru": "Улица Абая",
           "name_kz": null,
           "sequence": 8,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2834813,
+          "lon": 77.2186237,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14274296312",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 9,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Карасай батыра / Байгазиева",
@@ -105,11 +109,13 @@
           "name_ru": "Автостанция",
           "name_kz": null,
           "sequence": 11,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2349274,
+          "lon": 76.8158729,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "12533370339",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Кунаева",
@@ -133,11 +139,13 @@
           "name_ru": "СДУ",
           "name_kz": null,
           "sequence": 14,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2094505,
+          "lon": 76.6695895,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14066955742",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Село Долан",
@@ -161,11 +169,13 @@
           "name_ru": "Дачи, 19-й км",
           "name_kz": null,
           "sequence": 17,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2238775,
+          "lon": 76.7221263,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "14308357088",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Суюнбая",
@@ -267,51 +277,61 @@
           "name_ru": "ЖК Шугыла",
           "name_kz": null,
           "sequence": 28,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.211093,
+          "lon": 76.7899215,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "9408249927",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 29,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "ЦОН",
           "name_kz": null,
           "sequence": 30,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2587887,
+          "lon": 76.8195447,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 16
+          "osm_stop_id": "12483869159",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 31,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "НИШ",
           "name_kz": null,
           "sequence": 32,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2167408,
+          "lon": 76.951661,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "1986350003",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Аспандиярова",
@@ -335,11 +355,13 @@
           "name_ru": "Улица Яссауи",
           "name_kz": null,
           "sequence": 35,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2153817,
+          "lon": 76.8332045,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "9379250080",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Станция метро Бауыржана Момышулы, конечная",
@@ -370,11 +392,13 @@
           "name_ru": "Улица Яссауи",
           "name_kz": null,
           "sequence": 2,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2153817,
+          "lon": 76.8332045,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "9379250080",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Косынова",
@@ -398,21 +422,25 @@
           "name_ru": "НИШ",
           "name_kz": null,
           "sequence": 5,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2167408,
+          "lon": 76.951661,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "1986350003",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 6,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Административный центр Наурызбайского района",
@@ -427,21 +455,25 @@
           "name_ru": "ЖК Шугыла-City",
           "name_kz": null,
           "sequence": 8,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2084323,
+          "lon": 76.7913438,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 3
+          "osm_stop_id": "12592426687",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 9,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 57
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Нурлы / Сабденова",
@@ -531,11 +563,13 @@
           "name_ru": "Дачи, 19-й км",
           "name_kz": null,
           "sequence": 19,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2238775,
+          "lon": 76.7221263,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "14308357088",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Село Кумтоган",
@@ -568,11 +602,13 @@
           "name_ru": "СДУ",
           "name_kz": null,
           "sequence": 23,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2094505,
+          "lon": 76.6695895,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 2
+          "osm_stop_id": "14066955742",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Город Каскелен",
@@ -596,11 +632,13 @@
           "name_ru": "Автостанция",
           "name_kz": null,
           "sequence": 26,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "ambiguous_osm_name",
+          "lat": 43.2349274,
+          "lon": 76.8158729,
+          "coordinate_status": "osm_name_multiple",
           "terminal": false,
-          "coordinate_candidates": 4
+          "osm_stop_id": "12533370339",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Барибаева",
@@ -707,11 +745,11 @@
     "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
     "route_244_update_note": "Конечная Кайнар отражает опубликованное продление от 2026-07-01. Полная платформа остановки Кайнар и точные координаты не подтверждены.",
     "osm_coordinate_enrichment": {
-      "checked_at": "2026-11-20T21:22:05.565Z",
+      "checked_at": "2026-11-21T06:39:51.972Z",
       "source": "public/map/v1/stops-index.json",
       "matching": "exact normalized route stop name against OSM name:ru/name:kk/name; unique OSM element only",
-      "updated": 3,
-      "ambiguous": 19,
+      "updated": 22,
+      "ambiguous": 0,
       "unmatched": 50,
       "note": "No geocoding or street-centroid fallback. Ambiguous and unmatched route coordinates remain null."
     }

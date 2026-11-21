@@ -18,6 +18,7 @@ type Point3 = [number, number, number];
 
 interface TileBuilding extends CityBuilding {
   levels?: number;
+  buildingLevels?: number | null;
   'building:levels'?: number;
 }
 interface TileJson { buildings?: TileBuilding[]; roads?: Array<CityRoad & { t?: string; type?: string }>; }
@@ -121,8 +122,12 @@ function classifyBuilding(rawType: string, estimatedHeight: number): BuildingKin
 
 function buildingHeight(b: TileBuilding, kind: BuildingKind): number {
   const style = STYLES[kind];
-  const levels = positiveNumber(b.levels ?? b['building:levels']);
-  const explicit = levels ? levels * 3.1 : positiveNumber(b.h);
+  // В новом пайплайне `levels` — это ВЫСОТА в метрах (levels*3.1), а не число этажей.
+  // buildingLevels — настоящее число этажей.
+  const rawLevels = positiveNumber(b.levels ?? b['building:levels']);
+  const asMeters = rawLevels != null && rawLevels > 50 ? rawLevels : (rawLevels != null ? rawLevels * 3.1 : undefined);
+  const realFloors = positiveNumber(b.buildingLevels);
+  const explicit = realFloors ? realFloors * 3.1 : (asMeters ?? positiveNumber(b.h));
   const fallback = { apartments: 27, house: 6, commercial: 12, industrial: 10 }[kind];
   return clamp(explicit ?? fallback, style.minHeight, style.maxHeight);
 }
@@ -143,6 +148,142 @@ function roadColor(type: string): number {
   if (type.startsWith('service')) return 0x7b7971;
   return 0x70716c;
 }
+/**
+ * Склеивает road pieces одного OSM-way в непрерывную полилинию.
+ * Ключ — id до ':' (основной way id). Точка стыка — конец/начало отрезка.
+ */
+function stitchRoadPieces(roads: Array<CityRoad & { t?: string; type?: string }>): CityRoad[] {
+  const key = (p: Point2) => `${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`;
+
+  // Склейка по ГЕОМЕТРИИ: концы отрезков с совпадающими координатами
+  // (в т.ч. между тайлами) образуют непрерывную полилинию.
+  const startMap = new Map<string, number[]>();
+  const endMap = new Map<string, number[]>();
+  for (let i = 0; i < roads.length; i++) {
+    const poly = roads[i].poly;
+    if (poly.length < 2) continue;
+    const s = key(poly[0]);
+    const e = key(poly[poly.length - 1]);
+    (startMap.get(s) ?? startMap.set(s, []).get(s)!).push(i);
+    (endMap.get(e) ?? endMap.set(e, []).get(e)!).push(i);
+  }
+  const usedGeom = new Set<number>();
+  const result: CityRoad[] = [];
+
+  for (let i = 0; i < roads.length; i++) {
+    if (usedGeom.has(i)) continue;
+    usedGeom.add(i);
+    let poly = [...roads[i].poly];
+    const sample = roads[i];
+    let extended = true;
+    while (extended) {
+      extended = false;
+      const ek = key(poly[poly.length - 1]);
+      const sk = key(poly[0]);
+      // ищем отрезок, начинающийся в нашем конце
+      for (const j of endMap.get(ek) ?? []) {
+        if (j === i || usedGeom.has(j)) continue;
+        poly = [...poly, ...roads[j].poly.slice(1)];
+        usedGeom.add(j); extended = true; break;
+      }
+      if (extended) continue;
+      for (const j of startMap.get(ek) ?? []) {
+        if (j === i || usedGeom.has(j)) continue;
+        poly = [...poly, ...roads[j].poly.slice().reverse().slice(1)];
+        usedGeom.add(j); extended = true; break;
+      }
+      if (extended) continue;
+      for (const j of endMap.get(sk) ?? []) {
+        if (j === i || usedGeom.has(j)) continue;
+        poly = [...roads[j].poly.slice(0, -1), ...poly];
+        usedGeom.add(j); extended = true; break;
+      }
+      if (extended) continue;
+      for (const j of startMap.get(sk) ?? []) {
+        if (j === i || usedGeom.has(j)) continue;
+        poly = [...roads[j].poly.slice().reverse().slice(0, -1), ...poly];
+        usedGeom.add(j); extended = true; break;
+      }
+    }
+    if (poly.length >= 2) {
+      result.push({
+        poly, w: sample.w, lanes: sample.lanes, oneWay: sample.oneWay,
+        speed: sample.speed, t: sample.t, type: sample.type ?? sample.t ?? '',
+        id: String(sample.id ?? '').split(':')[0],
+      });
+    }
+  }
+
+  // Fallback: старая склейка по id (на случай несовпадения координат)
+  const byId = new Map<string, Array<CityRoad & { t?: string; type?: string }>>();
+  for (const r of result) {
+    const id = String(r.id ?? '').split(':')[0];
+    const arr = byId.get(id) ?? [];
+    arr.push(r as CityRoad & { t?: string; type?: string });
+    byId.set(id, arr);
+  }
+
+  for (const [id, pieces] of byId) {
+    if (pieces.length === 0) continue;
+    const sample = pieces[0];
+    if (pieces.length === 1) {
+      result.push({ ...sample, type: sample.type ?? sample.t ?? '' });
+      continue;
+    }
+
+    // Строим цепочки по совпадению концов
+    const chains: Point2[][] = [];
+    const used = new Set<number>();
+    for (let i = 0; i < pieces.length; i++) {
+      if (used.has(i)) continue;
+      used.add(i);
+      let poly = [...pieces[i].poly];
+      let extended = true;
+      while (extended) {
+        extended = false;
+        const startK = key(poly[0]);
+        const endK = key(poly[poly.length - 1]);
+        for (let j = 0; j < pieces.length; j++) {
+          if (used.has(j)) continue;
+          const p = pieces[j].poly;
+          if (p.length < 2) continue;
+          if (key(p[p.length - 1]) === startK) {
+            poly = [...p.slice(0, -1), ...poly];
+            used.add(j); extended = true; break;
+          }
+          if (key(p[0]) === endK) {
+            poly = [...poly, ...p.slice(1)];
+            used.add(j); extended = true; break;
+          }
+          if (key(p[0]) === startK) {
+            poly = [...p.slice().reverse().slice(0, -1), ...poly];
+            used.add(j); extended = true; break;
+          }
+          if (key(p[p.length - 1]) === endK) {
+            poly = [...poly, ...p.slice().reverse().slice(1)];
+            used.add(j); extended = true; break;
+          }
+        }
+      }
+      if (poly.length >= 2) chains.push(poly);
+    }
+
+    for (const poly of chains) {
+      result.push({
+        poly,
+        w: sample.w,
+        lanes: sample.lanes,
+        oneWay: sample.oneWay,
+        speed: sample.speed,
+        t: sample.t,
+        type: sample.type ?? sample.t ?? '',
+        id,
+      });
+    }
+  }
+  return result;
+}
+
 function roadPriority(type: string): number {
   type = type || '';
   if (type.startsWith('motorway')) return 0;
@@ -296,7 +437,8 @@ export class OsmTileProvider implements CityTileProvider {
     const buildings = candidates.slice(0, MAX_BUILDINGS).map((x) => x.source);
     const baseTriangles = buildings.length * 12;
     const roadBudget = Math.min(MAX_ROAD_TRIANGLES, Math.max(0, MAX_TILE_TRIANGLES - baseTriangles));
-    const roads = buildRoads(data.roads ?? [], tileX, tileZ, roadBudget);
+    const stitched = stitchRoadPieces(data.roads ?? []);
+    const roads = buildRoads(stitched, tileX, tileZ, roadBudget);
     return { buildings, roads };
   }
 

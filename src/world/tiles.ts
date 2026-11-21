@@ -12,12 +12,16 @@ export type CityBuilding = {
 };
 
 export type CityRoad = {
+  id?: string;
   poly: [number, number][];
   w: number;          // ширина, м
   lanes: number;
   oneWay: boolean;
   speed: number;      // км/ч
   type: string;
+  t?: string;         // алиас типа из OSM-пайплайна
+  sourceLengthM?: number;
+  lengthM?: number;
 };
 
 export type CityTile = {

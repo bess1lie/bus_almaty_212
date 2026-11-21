@@ -95,11 +95,20 @@ for (const routeId of ROUTE_IDS) {
         }
       }
 
-      if (candidates.size === 1) {
-        const match = candidates.values().next().value;
+      if (candidates.size >= 1) {
+        // Для игры берём ближайшую к центре Алматы реальную OSM-остановку
+        // с совпадающим названием. Не выдумываем координаты — используем OSM.
+        let match = candidates.values().next().value;
+        if (candidates.size > 1) {
+          let bestD = Infinity;
+          for (const c of candidates.values()) {
+            const d = Math.hypot((c.lon ?? 0) - 76.89, (c.lat ?? 0) - 43.24);
+            if (d < bestD) { bestD = d; match = c; }
+          }
+        }
         routeStop.lat = match.lat;
         routeStop.lon = match.lon;
-        routeStop.coordinate_status = 'osm_exact_name_unique';
+        routeStop.coordinate_status = candidates.size === 1 ? 'osm_exact_name_unique' : 'osm_name_multiple';
         routeStop.osm_stop_id = String(match.id);
         routeStop.osm_stop_type = match.osmType ?? 'unknown';
         routeStop.coordinate_source = 'public/map/v1/stops-index.json';

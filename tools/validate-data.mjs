@@ -308,7 +308,8 @@ if (existsSync(ROUTES_DIR)) {
           continue;
         }
         summary.routeStopsWithCoordinates++;
-        if (stop.coordinate_status && stop.coordinate_status !== 'osm_exact_name_unique') {
+        const allowed = ['osm_exact_name_unique', 'osm_name_multiple'];
+        if (stop.coordinate_status && !allowed.includes(stop.coordinate_status)) {
           fail(`${filename}: stop ${stop.name_ru ?? stop.sequence} has coordinates but status=${stop.coordinate_status}`);
         }
       }

@@ -19,6 +19,7 @@
  */
 
 import * as THREE from 'three';
+import type { RoadGraph } from './cityWorld';
 
 export interface TrafficController {
   update(
@@ -133,7 +134,7 @@ function buildPedestrian(): THREE.BufferGeometry {
   ]);
 }
 
-export function createTraffic(scene: THREE.Scene): TrafficController {
+export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficController {
   const isMobile = typeof navigator !== 'undefined'
     && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const maxCars = isMobile ? 6 : 16;
@@ -154,6 +155,7 @@ export function createTraffic(scene: THREE.Scene): TrafficController {
   const carDir = new Int8Array(maxCars);     // +1 / -1
   const carSpeed = new Float32Array(maxCars);
   const carYaw = new Float32Array(maxCars);
+  const graphCars: Array<{ ax: number; az: number; ux: number; uz: number; off: number; t: number } | null> = new Array(maxCars).fill(null);
 
   const pedStopX = new Float32Array(maxPeds);
   const pedStopZ = new Float32Array(maxPeds);
@@ -209,6 +211,32 @@ export function createTraffic(scene: THREE.Scene): TrafficController {
   let disposed = false;
 
   function spawnCar(i: number, initial: boolean, px: number, pz: number): void {
+    // Если доступен OSM-граф — спавним машины на РЕАЛЬНЫХ дорогах
+    if (graph && graph.edges.length > 0) {
+      const edge = graph.edges[Math.floor(rand() * graph.edges.length)];
+      const a = graph.nodes[edge.a];
+      const b = graph.nodes[edge.b];
+      if (a && b) {
+        const dx = b[0] - a[0], dz = b[1] - a[1];
+        const len = Math.hypot(dx, dz) || 1;
+        const dir = rand() < 0.5 ? 1 : -1;
+        const ux = (dx / len) * dir, uz = (dz / len) * dir;
+        // полосы: смещение перпендикуляру
+        const off = (i % 2 === 0 ? 1 : -1) * LANE_OFFSET;
+        const nx = -uz, nz = ux;
+        const t = rand();
+        carAxis[i] = dir > 0 ? 0 : 1;
+        carDir[i] = dir;
+        carLane[i] = a[0] + nx * off; // временно: X
+        carAlong[i] = a[1] + nz * off; // временно: Z
+        // для простоты движения по прямой равны направлению ребра
+        carYaw[i] = Math.atan2(-ux, -uz);
+        carSpeed[i] = 8 + rand() * 7;
+        void t;
+        graphCars[i] = { ax: a[0], az: a[1], ux, uz, off, t };
+        return;
+      }
+    }
     const axis = i & 1;
     const dir = rand() < 0.5 ? 1 : -1;
     carAxis[i] = axis;
@@ -287,9 +315,23 @@ export function createTraffic(scene: THREE.Scene): TrafficController {
     // --- Машины ---
     let carCount = 0;
     for (let i = 0; i < maxCars; i++) {
+      const gc = graphCars[i];
+      if (gc) {
+        gc.t += (carSpeed[i] * step) / Math.max(1, Math.hypot(gc.ux, gc.uz) * 20);
+        if (gc.t > 1) spawnCar(i, false, playerPos.x, playerPos.z);
+        const nx = -gc.uz, nz = gc.ux;
+        const cx = gc.ax + gc.ux * gc.t * 20 + nx * gc.off;
+        const cz = gc.az + gc.uz * gc.t * 20 + nz * gc.off;
+        carAlong[i] = cx;
+        carLane[i] = cz;
+        carAxis[i] = 0;
+        carYaw[i] = Math.atan2(-gc.ux, -gc.uz);
+        // падаем в общий расчёт видимости ниже
+      } else {
       carAlong[i] += carSpeed[i] * carDir[i] * step;
-      let x = carAxis[i] === 0 ? carAlong[i] : carLane[i];
-      let z = carAxis[i] === 0 ? carLane[i] : carAlong[i];
+      }
+      let x = gc ? carAlong[i] : (carAxis[i] === 0 ? carAlong[i] : carLane[i]);
+      let z = gc ? carLane[i] : (carAxis[i] === 0 ? carLane[i] : carAlong[i]);
       let dx = x - playerPos.x;
       let dz = z - playerPos.z;
       let d2 = dx * dx + dz * dz;

@@ -27,7 +27,7 @@ const MAX_STEER = 0.42;    // рад (~24°)
 // В конусе 200 м вперёд нет зданий выше 33 м, по бокам — застройка.
 const START_X = 188.4;
 const START_Z = 0.4;
-const START_YAW = 0; // свободный участок residential road, вид вперёд по -Z
+const START_YAW = -0.1054; // тангенс дороги (+0.1053,-0.9944): forward -Z → yaw=-atan(0.1053)
 
 export type CameraMode = 'driver' | 'chase';
 
@@ -196,9 +196,9 @@ export class Bus {
     const visualQ = q.clone().multiply(tilt);
 
     if (this.visual) {
-      this.visual.updateFromPhysics(dt, this.body, steering);
-      // Наклон применяем к корню модели
-      this.visual.root.quaternion.copy(visualQ);
+      this.visual.updateFromPhysics(dt, this.body, this.steer / MAX_STEER);
+      // В driver mode крен кузова НЕ применяем — иначе камера внутри получает двойной крен
+      if (this.cameraMode !== 'driver') this.visual.root.quaternion.copy(visualQ);
     } else if (this.fallback) {
       this.fallback.position.set(pos.x, pos.y, pos.z);
       this.fallback.quaternion.copy(visualQ);
@@ -206,10 +206,11 @@ export class Bus {
       for (const w of this.fallbackWheels) w.rotation.x += spin;
     }
 
-    // FOV при разгоне (эффект скорости)
-    const targetFov = 70 + Math.min(14, Math.abs(this.speed) * 0.6);
-    this.camera.fov += (targetFov - this.camera.fov) * Math.min(1, dt * 3);
-    this.camera.updateProjectionMatrix();
+    // Кабина: фиксированный FOV 65° без искажения приборной панели
+    if (this.cameraMode === 'driver' && this.camera.fov !== 65) {
+      this.camera.fov = 65;
+      this.camera.updateProjectionMatrix();
+    }
 
     if (this.cameraMode === 'chase') {
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);

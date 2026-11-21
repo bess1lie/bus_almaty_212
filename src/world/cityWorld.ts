@@ -13,6 +13,38 @@ export const CITY_DETAIL_DISTANCE = 300;
 export const CITY_HIDDEN_DISTANCE = 1500;
 export const CITY_MAX_TILE_TRIANGLES = 30_000;
 
+/** Упрощённый граф дорог для трафика и маршрутов. */
+export class RoadGraph {
+  readonly nodes: Array<[number, number]> = [];
+  readonly edges: Array<{ a: number; b: number; oneWay: boolean; speed: number; lanes: number }> = [];
+  private readonly idx = new Map<string, number>();
+  private readonly index = (x: number, z: number): number => {
+    const k = `${Math.round(x / 8)},${Math.round(z / 8)}`;
+    const e = this.idx.get(k);
+    if (e !== undefined) return e;
+    const i = this.nodes.length;
+    this.nodes.push([x, z]);
+    this.idx.set(k, i);
+    return i;
+  };
+  addRoad(poly: Array<[number, number]>, oneWay: boolean, speed: number, lanes: number) {
+    for (let i = 0; i < poly.length - 1; i++) {
+      const a = this.index(poly[i][0], poly[i][1]);
+      const b = this.index(poly[i + 1][0], poly[i + 1][1]);
+      if (a === b) continue;
+      this.edges.push({ a, b, oneWay, speed, lanes });
+    }
+  }
+  nearest(x: number, z: number): number {
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < this.nodes.length; i++) {
+      const d = (this.nodes[i][0] - x) ** 2 + (this.nodes[i][1] - z) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+}
+
 export interface BuildingSource {
   position: THREE.Vector3;
   size: THREE.Vector3;
@@ -25,6 +57,7 @@ export interface BuildingSource {
 export interface CityTilePayload {
   buildings: BuildingSource[];
   roads?: THREE.Object3D | null;
+  roadLines?: Array<{ poly: Array<[number, number]>; oneWay: boolean; speed: number; lanes: number }>;
 }
 
 export interface CityTileProvider {
@@ -90,6 +123,7 @@ function countTriangles(object: THREE.Object3D | null): number {
 }
 
 export class CityWorld {
+  readonly graph = new RoadGraph();
   private readonly tileSize: number;
   private readonly tiles = new Map<string, TileRuntime>();
   private readonly pending = new Set<string>();
@@ -223,6 +257,7 @@ export class CityWorld {
     root.name = `tile-${key}`;
     root.position.set(x * this.tileSize, 0, z * this.tileSize);
     if (payload.roads) root.add(payload.roads);
+    for (const r of payload.roadLines ?? []) this.graph.addRoad(r.poly, r.oneWay, r.speed, r.lanes);
 
     const buildings: BuildingRuntime[] = [];
     const baseMatrices: THREE.Matrix4[] = [];

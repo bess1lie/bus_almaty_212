@@ -99,7 +99,6 @@ async function main() {
 
   createEnvironment(scene);
   atmosphere = createAtmosphere(scene, chaseCam);
-  traffic = createTraffic(scene);
 
   // 2. Физика
   setLoading('Инициализация физики...', loadingTextEl);
@@ -126,6 +125,8 @@ async function main() {
 
   // Уличные объекты (деревья, фонари, разметка, остановки)
   streetProps = createStreetProps(scene, streetMetadata.tileKeyProvider);
+
+  traffic = createTraffic(scene, cityWorld.graph);
 
   // 4. Автобус — стартуем без ожидания GLB
   setLoading('Посадка за руль...', loadingTextEl);

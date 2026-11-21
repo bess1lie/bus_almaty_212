@@ -495,7 +495,16 @@ export class OsmTileProvider implements CityTileProvider {
     const roadBudget = Math.min(MAX_ROAD_TRIANGLES, Math.max(0, MAX_TILE_TRIANGLES - baseTriangles));
     const stitched = stitchRoadPieces(data.roads ?? []);
     const roads = buildRoads(stitched, tileX, tileZ, roadBudget);
-    return { buildings, roads };
+    return {
+      buildings,
+      roads,
+      roadLines: stitched.map((r) => ({
+        poly: r.poly,
+        oneWay: r.oneWay,
+        speed: r.speed,
+        lanes: r.lanes,
+      })),
+    };
   }
 
   dispose(): void {

@@ -9,7 +9,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { World as RapierWorld } from '@dimforge/rapier3d-compat';
 
 function getRapierCompat() { return RAPIER; }
-import { getTextures, type BuildingTextureKind } from './textures';
+import { getTextures, createRadialShadowTexture, type BuildingTextureKind } from './textures';
 
 export const CITY_TILE_SIZE = 2000;
 export const CITY_DETAIL_DISTANCE = 300;
@@ -105,6 +105,7 @@ interface TileRuntime {
   root: THREE.Group;
   bounds: THREE.Box3;
   boxMesh: THREE.InstancedMesh | null;
+  shadowMesh: THREE.InstancedMesh | null;
   detailMeshes: THREE.InstancedMesh[];
   facadeGeometries: Set<THREE.BufferGeometry>;
   buildings: BuildingRuntime[];
@@ -145,6 +146,7 @@ export class CityWorld {
   private readonly pending = new Set<string>();
   private readonly keep = new Set<string>();
   private readonly boxMaterial: THREE.MeshStandardMaterial;
+  private readonly shadowMaterial: THREE.MeshBasicMaterial;
   private readonly wallMaterials: Record<BuildingTextureKind, THREE.MeshStandardMaterial>;
   private readonly windowMaterial: THREE.MeshStandardMaterial;
   private readonly onError?: CityWorldOptions['onTileError'];
@@ -168,6 +170,11 @@ export class CityWorld {
     this.onUnloaded = options.onTileUnloaded;
     const tex = getTextures();
     this.boxMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, vertexColors: true });
+    this.shadowMaterial = new THREE.MeshBasicMaterial({
+      color: 0x26313f, alphaMap: createRadialShadowTexture(), transparent: true,
+      opacity: 0.28, depthWrite: false, toneMapped: false,
+      polygonOffset: true, polygonOffsetFactor: -1,
+    });
     const mkWall = (kind: BuildingTextureKind) => new THREE.MeshStandardMaterial({
       color: 0xffffff, vertexColors: true, roughness: 0.9, map: tex.walls[kind],
     });
@@ -319,6 +326,28 @@ export class CityWorld {
       root.add(boxMesh);
     }
 
+    // Мягкие контактные тени под зданиями — один draw call на тайл
+    let shadowMesh: THREE.InstancedMesh | null = null;
+    if (buildings.length > 0) {
+      const sg = new THREE.PlaneGeometry(1, 1);
+      sg.rotateX(-Math.PI / 2);
+      shadowMesh = new THREE.InstancedMesh(sg, this.shadowMaterial, buildings.length);
+      shadowMesh.frustumCulled = false;
+      const dummy = new THREE.Object3D();
+      const sunElev = THREE.MathUtils.degToRad(18);
+      for (let i = 0; i < buildings.length; i++) {
+        const b = buildings[i].source;
+        const len = THREE.MathUtils.clamp(b.size.y / Math.tan(sunElev), 5, 40);
+        dummy.position.set(b.position.x + 0.45 * len, 0.065, b.position.z + 0.3 * len);
+        dummy.rotation.set(0, 0.35, 0);
+        dummy.scale.set(Math.max(b.size.x, b.size.z) * 1.3, len, 1);
+        dummy.updateMatrix();
+        shadowMesh.setMatrixAt(i, dummy.matrix);
+      }
+      shadowMesh.instanceMatrix.needsUpdate = true;
+      root.add(shadowMesh);
+    }
+
     // Упрощённые физические коллайдеры для крупных зданий (≤40 на тайл)
     const R = getRapierCompat();
     const colliderHandles: number[] = [];
@@ -371,7 +400,7 @@ export class CityWorld {
         new THREE.Vector3(minX, -100, minZ),
         new THREE.Vector3(minX + this.tileSize, 1000, minZ + this.tileSize),
       ),
-      boxMesh, detailMeshes, facadeGeometries, buildings, baseMatrices, inFrustum: true,
+      boxMesh, shadowMesh, detailMeshes, facadeGeometries, buildings, baseMatrices, inFrustum: true,
     });
     this.updateLod(this.tiles.get(key)!, player.x, player.z);
     this.onLoaded?.(x, z);
@@ -424,7 +453,7 @@ export class CityWorld {
       if (mesh.geometry !== this.boxGeom && !tile.facadeGeometries.has(mesh.geometry)) mesh.geometry.dispose();
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const mat of mats) {
-        if (mat !== this.boxMaterial && mat !== this.windowMaterial && !Object.values(this.wallMaterials).includes(mat as THREE.MeshStandardMaterial)) mat.dispose();
+        if (mat !== this.boxMaterial && mat !== this.windowMaterial && mat !== this.shadowMaterial && !Object.values(this.wallMaterials).includes(mat as THREE.MeshStandardMaterial)) mat.dispose();
       }
     });
     const edges = this.tileEdges.get(key);

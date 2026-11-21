@@ -16,6 +16,24 @@ export interface TextureLibrary {
 
 let cached: TextureLibrary | null = null;
 
+/** Мягкая радиальная alpha-маска для контактных теней. */
+export function createRadialShadowTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(32, 32, 3, 32, 32, 31);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.35, '#c4c4c4');
+  g.addColorStop(0.7, '#555555');
+  g.addColorStop(1, '#000000');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.NoColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
 function makeCanvas(size = 256): { c: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
   const c = document.createElement('canvas');
   c.width = c.height = size;
@@ -193,22 +211,61 @@ function drawFacadeDetails(ctx: CanvasRenderingContext2D, kind: BuildingTextureK
   }
 }
 
+/** Панельный фасад в стиле Алматы: окна с рамами, балконы, кондиционеры, вход. */
+function drawAlmatyPanelFacade(ctx: CanvasRenderingContext2D, seed = 42) {
+  const S = 512;
+  const rnd = (n: number) => { const v = Math.sin(seed * 127.1 + n * 311.7) * 43758.5453; return v - Math.floor(v); };
+  ctx.fillStyle = '#d4c2a5'; ctx.fillRect(0, 0, S, S);
+  for (let i = 0; i < 65; i++) {
+    const x = rnd(i * 3) * S, y = rnd(i * 5) * S;
+    const w = 15 + rnd(i * 7) * 55, h = 8 + rnd(i * 11) * 30;
+    ctx.fillStyle = rnd(i * 13) > 0.5 ? 'rgba(255,245,220,0.10)' : 'rgba(75,65,55,0.08)';
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.strokeStyle = 'rgba(86,83,74,0.35)'; ctx.lineWidth = 3;
+  for (let y = 0; y <= S; y += 128) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(S, y); ctx.stroke(); }
+  for (let x = 0; x <= S; x += 128) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, S); ctx.stroke(); }
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 3; col++) {
+    const x = 85 + col * 171, y = 82 + row * 92;
+    ctx.fillStyle = '#59676a'; ctx.fillRect(x - 29, y - 27, 58, 58);
+    ctx.fillStyle = rnd(row * 17 + col) > 0.75 ? '#b3a58c' : '#587681';
+    ctx.fillRect(x - 24, y - 22, 48, 48);
+    ctx.fillStyle = 'rgba(220,240,230,0.25)'; ctx.fillRect(x - 20, y - 18, 5, 40);
+    ctx.fillStyle = '#9da9a4'; ctx.fillRect(x - 2, y - 22, 3, 48);
+    ctx.fillStyle = '#e3d4bd'; ctx.fillRect(x - 32, y + 29, 64, 4);
+    if (rnd(row * 31 + col * 7) > 0.45) {
+      ctx.fillStyle = '#8b8880'; ctx.fillRect(x - 36, y + 32, 72, 7);
+      ctx.strokeStyle = '#566269'; ctx.lineWidth = 3;
+      ctx.strokeRect(x - 31, y + 17, 62, 18);
+      ctx.beginPath(); ctx.moveTo(x, y + 17); ctx.lineTo(x, y + 35); ctx.stroke();
+    }
+    if (rnd(row * 43 + col * 13) > 0.7) {
+      ctx.fillStyle = '#aab3ad'; ctx.fillRect(x + 34, y - 8, 23, 15);
+      ctx.fillStyle = '#354348'; ctx.fillRect(x + 37, y - 5, 17, 8);
+    }
+  }
+  ctx.fillStyle = '#49575a'; ctx.fillRect(218, 416, 78, 96);
+  ctx.fillStyle = '#76939a'; ctx.fillRect(226, 424, 62, 72);
+  ctx.fillStyle = '#8c806e'; ctx.fillRect(214, 407, 86, 8);
+  for (let i = 0; i < 20; i++) {
+    const x = rnd(i * 67) * S, y = rnd(i * 91) * S;
+    ctx.fillStyle = 'rgba(67,58,48,0.14)';
+    ctx.fillRect(x, y, 2 + rnd(i * 5) * 4, 12 + rnd(i * 9) * 35);
+  }
+  const grime = ctx.createLinearGradient(0, 300, 0, S);
+  grime.addColorStop(0, 'rgba(60,50,40,0)');
+  grime.addColorStop(1, 'rgba(45,42,38,0.22)');
+  ctx.fillStyle = grime; ctx.fillRect(0, 0, S, S);
+}
+
 function wallTexture(kind: BuildingTextureKind): THREE.CanvasTexture {
-  const { c, ctx } = makeCanvas(256);
+  const { c, ctx } = makeCanvas(kind === 'apartments' ? 512 : 256);
   if (kind === 'apartments') {
-    // светлая панелька: горизонтальные швы + панели
-    ctx.fillStyle = '#d8dad6';
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.strokeStyle = 'rgba(90,95,95,0.45)';
-    ctx.lineWidth = 2;
-    for (let y = 0; y <= 256; y += 64) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(256, y); ctx.stroke();
-    }
-    for (let x = 0; x <= 256; x += 128) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 256); ctx.stroke();
-    }
-    grain(ctx, 256, 1000, 0.07);
-  } else if (kind === 'house') {
+    drawAlmatyPanelFacade(ctx, 42);
+    drawFacadeDetails(ctx, kind);
+    return toTexture(c, 1);
+  }
+  if (kind === 'house') {
     // кирпич/штукатурка
     ctx.fillStyle = '#cbb79d';
     ctx.fillRect(0, 0, 256, 256);

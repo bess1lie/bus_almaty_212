@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createRadialShadowTexture } from './textures';
 
 /** A point is [X, Z]. X=east, Z=south, Y=up. */
 export type StreetPoint = readonly [number, number];
@@ -426,6 +427,7 @@ export function createStreetProps(
   let treeCrowns: THREE.InstancedMesh;
   let lampPoles: THREE.InstancedMesh;
   let lampHeads: THREE.InstancedMesh;
+  let lampPools: THREE.InstancedMesh;
   let sidewalks: THREE.InstancedMesh;
   let roadLines: THREE.LineSegments;
   let linePositionAttribute: THREE.BufferAttribute;
@@ -481,6 +483,13 @@ export function createStreetProps(
   treeCrowns = makeInstanced(crownGeometry, crownMaterial, MAX_TREES, 'street-tree-crowns');
   lampPoles = makeInstanced(lampPoleGeometry, lampPoleMaterial, MAX_LAMPS, 'street-lamp-poles');
   lampHeads = makeInstanced(lampHeadGeometry, lampHeadMaterial, MAX_LAMPS, 'street-lamp-heads');
+  const poolGeo = new THREE.PlaneGeometry(1, 1);
+  poolGeo.rotateX(-Math.PI / 2);
+  const poolMat = new THREE.MeshBasicMaterial({
+    color: 0xf0a35f, alphaMap: createRadialShadowTexture(), transparent: true,
+    opacity: 0.22, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1,
+  });
+  lampPools = makeInstanced(poolGeo, poolMat, MAX_LAMPS, 'street-lamp-pools');
   sidewalks = makeInstanced(sidewalkGeometry, sidewalkMaterial, 1, 'street-sidewalks');
   sidewalks.frustumCulled = false;
 
@@ -493,7 +502,7 @@ export function createStreetProps(
   roadLines.name = 'street-road-markings';
   roadLines.frustumCulled = false;
 
-  scene.add(treeTrunks, treeCrowns, lampPoles, lampHeads, sidewalks, roadLines);
+  scene.add(treeTrunks, treeCrowns, lampPoles, lampHeads, lampPools, sidewalks, roadLines);
 
   for (let i = 0; i < MAX_POINT_LIGHTS; i++) {
     const light = new THREE.PointLight(0xffd18a, 6, 34, 2);
@@ -580,6 +589,16 @@ export function createStreetProps(
         model: stop.model ?? (random01(seed) < 0.5 ? 'soviet' : 'modern'),
         seed,
       });
+    }
+
+    // Стоп-линия перед остановкой (перпендикулярно дороге)
+    for (const stop of stops) {
+      const nx = -Math.sin(stop.yaw), nz = Math.cos(stop.yaw);
+      const hw = 4.5;
+      addLine(
+        stop.x - nx * hw + Math.cos(stop.yaw) * 3, stop.z - nz * hw + Math.sin(stop.yaw) * 3,
+        stop.x + nx * hw + Math.cos(stop.yaw) * 3, stop.z + nz * hw + Math.sin(stop.yaw) * 3,
+      );
     }
 
     // A tile contains at most two explicitly supplied stop placements.
@@ -969,9 +988,11 @@ export function createStreetProps(
         1, lamp.height, 1);
       writeMatrix(lampHeads, i, lamp.x, lamp.height - 0.08, lamp.z, lamp.yaw,
         1, 1, 1);
+      writeMatrix(lampPools, i, lamp.x, 0.07, lamp.z, lamp.yaw, 5, 8, 1);
     }
     updateInstancedMesh(lampPoles, lampCount);
     updateInstancedMesh(lampHeads, lampCount);
+    updateInstancedMesh(lampPools, lampCount);
 
     for (let i = 0; i < sidewalkCount; i++) {
       const sidewalk = nearbySidewalks[i].item;
@@ -1020,6 +1041,7 @@ export function createStreetProps(
     const isNight = scene.userData.isNight === true || scene.userData.timeOfDay === 'night';
     lampHeadMaterial.emissive.setHex(isNight ? 0xffb75e : 0x000000);
     lampHeadMaterial.emissiveIntensity = isNight ? 1.8 : 0;
+    lampPools.visible = isNight;
     for (let i = 0; i < pointLights.length; i++) {
       const light = pointLights[i];
       const lamp = isNight && i < lampCount ? nearbyLamps[i]?.item : undefined;
@@ -1036,7 +1058,7 @@ export function createStreetProps(
     if (disposed) return;
     disposed = true;
 
-    const renderObjects: THREE.Object3D[] = [treeTrunks, treeCrowns, lampPoles, lampHeads, sidewalks, roadLines];
+    const renderObjects: THREE.Object3D[] = [treeTrunks, treeCrowns, lampPoles, lampHeads, lampPools, sidewalks, roadLines];
     if (sovietStopMesh) renderObjects.push(sovietStopMesh);
     if (modernStopMesh) renderObjects.push(modernStopMesh);
     for (const object of renderObjects) {

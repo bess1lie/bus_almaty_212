@@ -40,10 +40,12 @@ export function tileCenter(key: string): [number, number] {
   return [tx * TILE_SIZE + TILE_SIZE / 2, tz * TILE_SIZE + TILE_SIZE / 2];
 }
 
-const tileCache = new Map<string, Promise<CityTile>>();
+// Один общий raw-JSON кэш на тайл: все потребители (OsmTileProvider,
+// StreetMetadataProvider) получают ОДИН и тот же разобранный объект.
+const rawCache = new Map<string, Promise<CityTile>>();
 
-export function loadTile(key: string): Promise<CityTile> {
-  let p = tileCache.get(key);
+export function loadTileRaw(key: string): Promise<CityTile> {
+  let p = rawCache.get(key);
   if (!p) {
     p = fetch(`${import.meta.env.BASE_URL}map/v1/tiles/${key}.json`)
       .then((r) => {
@@ -51,19 +53,22 @@ export function loadTile(key: string): Promise<CityTile> {
         return r.json() as Promise<CityTile>;
       })
       .catch((err) => {
-        tileCache.delete(key); // не ретеним падающие запросы
+        rawCache.delete(key);
         throw err;
       });
-    tileCache.set(key, p);
+    rawCache.set(key, p);
   }
   return p;
 }
 
+/** @deprecated используйте loadTileRaw */
+export function loadTile(key: string): Promise<CityTile> { return loadTileRaw(key); }
+
 export function clearTileCache() {
-  tileCache.clear();
+  rawCache.clear();
 }
 
 export function tileTiles(): string[] {
   // все известные ключи тайлов (для статистики/логики)
-  return [...tileCache.keys()];
+  return [...rawCache.keys()];
 }

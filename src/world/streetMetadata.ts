@@ -5,6 +5,7 @@ import type {
   StreetTileKeyProvider,
   StreetPoint,
 } from './streetProps';
+import { loadTileRaw } from './tiles';
 
 const TILE_SIZE = 2000;
 const VERSION = 1;
@@ -92,7 +93,8 @@ function normalizeGreenZones(
       polygon = parsePolygon(raw.poly ?? raw.points);
     }
     if (!polygon) continue;
-    result.push({ id, points: polygon, coordinateSpace: 'tile' });
+    // Генератор пишет полигоны парков в МИРОВЫХ координатах (как и дороги).
+    result.push({ id, points: polygon, coordinateSpace: 'world' });
   }
   return result;
 }
@@ -138,33 +140,22 @@ export class StreetMetadataProvider {
     const existingRequest = this.pending.get(key);
     if (existingRequest) return existingRequest;
 
-    const controller = new AbortController();
-    this.controllers.set(key, controller);
-
-    const url = new URL(`map/v1/tiles/${x}_${z}.json`, this.baseUrl).toString();
-    const request = this.fetcher(url, {
-      method: 'GET',
-      signal: controller.signal,
-      cache: 'force-cache',
-      headers: { Accept: 'application/json' },
-    })
-      .then(async (response): Promise<StreetTileDescriptor> => {
-        if (!response.ok) throw new Error(`HTTP ${response.status} while loading ${url}`);
-        const json: unknown = await response.json();
+    // Общий кэш с OsmTileProvider — один запрос/парсинг на тайл
+    const request = loadTileRaw(`${x}_${z}`)
+      .then((json: unknown): StreetTileDescriptor => {
         const payload = normalizePayload(json);
         const descriptor = this.buildDescriptor(x, z, payload);
         if (!this.disposed) this.descriptors.set(key, descriptor);
         return descriptor;
       })
       .catch((error: unknown) => {
-        if (!this.disposed && !(error instanceof DOMException && error.name === 'AbortError') && this.logErrors) {
+        if (!this.disposed && this.logErrors) {
           console.warn(`[StreetMetadata] Failed to load tile ${key}:`, error);
         }
         return undefined;
       })
       .finally(() => {
         this.pending.delete(key);
-        this.controllers.delete(key);
       });
 
     this.pending.set(key, request);
@@ -220,13 +211,29 @@ export class StreetMetadataProvider {
         sidewalks: true,
       });
     }
+    // Реальные OSM-остановки из тайла (если есть) — не синтетические
+    const stops: Array<NonNullable<StreetTileDescriptor['stops']>[number]> = [];
+    const rawStops = (payload as unknown as Record<string, unknown>).stops;
+    if (Array.isArray(rawStops)) {
+      for (const raw of rawStops) {
+        if (!isRecord(raw)) continue;
+        const pos = parsePoint(raw.position ?? raw.pos);
+        if (!pos) continue;
+        stops.push({
+          position: pos,
+          yaw: Number.isFinite(Number(raw.yaw)) ? Number(raw.yaw) : 0,
+          model: raw.model === 'soviet' || raw.model === 'modern' ? raw.model : 'modern',
+          coordinateSpace: 'world',
+        } as NonNullable<StreetTileDescriptor['stops']>[number]);
+      }
+    }
     return {
       key: tileKey(x, z),
       x,
       z,
       roads,
       greenZones: normalizeGreenZones(payload),
-      stops: [],
+      stops,
       version: VERSION,
     };
   }

@@ -5,6 +5,7 @@ import type {
   BuildingSource,
 } from './cityWorld';
 import type { CityBuilding, CityRoad } from './tiles';
+import { loadTileRaw } from './tiles';
 import { getTextures, type BuildingTextureKind } from './textures';
 
 const TILE_SIZE = 2000;
@@ -122,12 +123,11 @@ function classifyBuilding(rawType: string, estimatedHeight: number): BuildingKin
 
 function buildingHeight(b: TileBuilding, kind: BuildingKind): number {
   const style = STYLES[kind];
-  // В новом пайплайне `levels` — это ВЫСОТА в метрах (levels*3.1), а не число этажей.
-  // buildingLevels — настоящее число этажей.
-  const rawLevels = positiveNumber(b.levels ?? b['building:levels']);
-  const asMeters = rawLevels != null && rawLevels > 50 ? rawLevels : (rawLevels != null ? rawLevels * 3.1 : undefined);
-  const realFloors = positiveNumber(b.buildingLevels);
-  const explicit = realFloors ? realFloors * 3.1 : (asMeters ?? positiveNumber(b.h));
+  // Пайплайн пишет: h — высота в метрах, levels — ТОЖЕ высота в метрах,
+  // buildingLevels — число этажей. НИКОГДА не умножаем levels на 3.1.
+  const explicit = positiveNumber(b.h)
+    ?? positiveNumber(b.levels)
+    ?? positiveNumber(b['building:levels']);
   const fallback = { apartments: 27, house: 6, commercial: 12, industrial: 10 }[kind];
   return clamp(explicit ?? fallback, style.minHeight, style.maxHeight);
 }
@@ -377,9 +377,63 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
   return group;
 }
 
+/**
+ * Экструзия реального полигона здания в геометрию с Questions base Y=0, top Y=1.
+ * Стены + крыша. Возвращает normalized geometry для instance matrix (scale = size).
+ */
+function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
+  if (poly.length < 3) return null;
+  // Нормализуем контур в [0..1] по X/Z, Y будет 0..1
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [x, z] of poly) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+  }
+  const w = maxX - minX || 1, d = maxZ - minZ || 1;
+  const norm = poly.map(([x, z]) => [(x - minX) / w - 0.5, (z - minZ) / d - 0.5] as Point2);
+
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const C = (r: number, g: number, b: number) => { colors.push(r, g, b); };
+
+  // Стены: для каждого ребра quad от Y=0 до Y=1
+  for (let i = 0; i < norm.length; i++) {
+    const a = norm[i], b = norm[(i + 1) % norm.length];
+    const base = positions.length / 3;
+    positions.push(a[0], 0, a[1], b[0], 0, b[1], b[0], 1, b[1], a[0], 1, a[1]);
+    const shade = 0.82 + (i % 3) * 0.07;
+    for (let k = 0; k < 4; k++) { C(shade, shade, shade); }
+    uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
+  // Крыша: triangle fan по центроиду
+  let cx = 0, cz = 0;
+  for (const [x, z] of norm) { cx += x; cz += z; }
+  cx /= norm.length; cz /= norm.length;
+  const roofBase = positions.length / 3;
+  positions.push(cx, 1, cz); C(0.55, 0.6, 0.62); uvs.push(0.5, 0.5);
+  for (const [x, z] of norm) { positions.push(x, 1, z); C(0.55, 0.6, 0.62); uvs.push(x + 0.5, z + 0.5); }
+  for (let i = 0; i < norm.length; i++) {
+    indices.push(roofBase, roofBase + 1 + i, roofBase + 1 + ((i + 1) % norm.length));
+  }
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.setIndex(indices);
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+
 export class OsmTileProvider implements CityTileProvider {
   private readonly jsonCache = new Map<string, Promise<TileJson>>();
   private readonly facadeCache = new Map<BuildingKind, THREE.BufferGeometry>();
+  private readonly footprintCache = new Map<string, THREE.BufferGeometry>();
 
   private getFacade(kind: BuildingKind): THREE.BufferGeometry {
     let g = this.facadeCache.get(kind);
@@ -388,18 +442,8 @@ export class OsmTileProvider implements CityTileProvider {
   }
 
   private fetchTile(key: string): Promise<TileJson> {
-    let r = this.jsonCache.get(key);
-    if (!r) {
-      const url = `${import.meta.env.BASE_URL}map/v1/tiles/${key}.json`;
-      r = fetch(url)
-        .then(async (res) => {
-          if (!res.ok) throw new Error(`[OSM] Tile ${key}: HTTP ${res.status}`);
-          return (await res.json()) as TileJson;
-        })
-        .catch((e) => { this.jsonCache.delete(key); throw e; });
-      this.jsonCache.set(key, r);
-    }
-    return r;
+    // Общий кэш: один fetch/JSON parse на тайл для всех подсистем
+    return loadTileRaw(key) as Promise<TileJson>;
   }
 
   async loadTile(tileX: number, tileZ: number): Promise<CityTilePayload> {
@@ -422,12 +466,24 @@ export class OsmTileProvider implements CityTileProvider {
       const kind = classifyBuilding(b.type, rawHeight);
       const height = buildingHeight(b, kind);
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
+      // Реальный контур здания вместо прямоугольного AABB
+      const shapeKey = `${b.poly.length}_${b.poly.map((p) => `${Math.round(p[0])},${Math.round(p[1])}`).join(';')}`;
+      let footprint = this.footprintCache.get(shapeKey);
+      if (!footprint) {
+        const made = makeFootprintGeometry(b.poly);
+        footprint = made ?? this.getFacade(kind);
+        if (made) {
+          footprint.userData.buildingKind = kind;
+          // кэшируем только простые формы, чтобы не раздувать память
+          if (this.footprintCache.size < 400) this.footprintCache.set(shapeKey, made);
+        }
+      }
       const source: BuildingSource = {
         position: new THREE.Vector3((minX + maxX) * 0.5 - originX, 0, (minZ + maxZ) * 0.5 - originZ),
         size: new THREE.Vector3(width, height, depth),
         color: buildingColor(kind, seed),
         rotationY: 0,
-        geometry: this.getFacade(kind),
+        geometry: footprint,
         collidable: false,
       };
       candidates.push({ source, score: width * depth * (1 + height / 60) });
@@ -446,5 +502,7 @@ export class OsmTileProvider implements CityTileProvider {
     this.jsonCache.clear();
     for (const g of this.facadeCache.values()) g.dispose();
     this.facadeCache.clear();
+    for (const g of this.footprintCache.values()) g.dispose();
+    this.footprintCache.clear();
   }
 }

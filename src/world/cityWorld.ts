@@ -37,6 +37,7 @@ export interface CityWorldFrame {
   velocity: THREE.Vector3;
   forward: THREE.Vector3;
   deltaSeconds: number;
+  activeCamera?: THREE.Camera; // реальная камера (кабина/chase) для frustum
 }
 
 export interface CityWorldOptions {
@@ -154,8 +155,9 @@ export class CityWorld {
 
     this.windowMaterial.emissiveIntensity = this.scene.userData.isNight === true ? 1.2 : 0;
 
-    this.camera.updateMatrixWorld();
-    _pv.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    const frustumCam = (frame.activeCamera as THREE.PerspectiveCamera) ?? this.camera;
+    frustumCam.updateMatrixWorld();
+    _pv.multiplyMatrices(frustumCam.projectionMatrix, frustumCam.matrixWorldInverse);
     _frustum.setFromProjectionMatrix(_pv);
 
     for (const tile of this.tiles.values()) {
@@ -263,22 +265,26 @@ export class CityWorld {
       root.add(boxMesh);
     }
 
-    // Ближний LOD: детализированные фасады, сгруппированные по геометрии
+    // Ближний LOD: детализированные фасады, сгруппированные по геометрии.
+    // Capacity = ВСЕ здания этого типа — выбор ближайших происходит в updateLod().
     const detailMeshes: THREE.InstancedMesh[] = [];
     const roadTris = countTriangles(payload.roads ?? null);
     let remaining = Math.max(0, CITY_MAX_TILE_TRIANGLES - buildings.length * 12 - roadTris);
+    const geoArray = [...byGeometry.entries()];
+    // Минимальный бюджет на каждый тип, чтобы ранние типы не съедали всё
+    const minPerType = Math.floor(remaining / Math.max(1, geoArray.length));
 
-    for (const [geometry, indices] of byGeometry) {
+    for (const [geometry, indices] of geoArray) {
       const tri = Math.floor((geometry.index?.count ?? geometry.getAttribute('position').count) / 3);
-      const capacity = Math.min(indices.length, Math.floor(remaining / Math.max(1, tri)));
-      if (capacity <= 0) continue;
-      remaining -= capacity * tri;
+      const budget = Math.max(minPerType, Math.floor(remaining / Math.max(1, geoArray.length)));
+      const capacity = Math.min(indices.length, Math.max(1, Math.floor(budget / Math.max(1, tri))));
       const mesh = new THREE.InstancedMesh(geometry, this.materialsFor(geometry), capacity);
       mesh.count = 0;
       mesh.frustumCulled = false;
-      mesh.userData.indices = indices.slice(0, capacity);
+      mesh.userData.allIndices = indices; // полный список — не подвыборка
       detailMeshes.push(mesh);
       root.add(mesh);
+      remaining = Math.max(0, remaining - Math.min(remaining, capacity * tri));
     }
 
     this.scene.add(root);
@@ -305,12 +311,11 @@ export class CityWorld {
     near.sort((a, b) => a.dist - b.dist);
 
     const selected = new Set<number>();
+    const nearSet = new Set(near.map((n) => n.index));
     for (const mesh of tile.detailMeshes) {
-      const indices = mesh.userData.indices as number[];
-      const picked = indices.filter((idx) => near.some((n) => n.index === idx)).slice(0, mesh.instanceMatrix.count);
-      // Заполняем только реально выбранные ближайшие здания
-      const list = near.filter((n) => indices.includes(n.index)).slice(0, mesh.instanceMatrix.count);
-      void picked;
+      const all = mesh.userData.allIndices as number[];
+      const list = near.filter((n) => all.includes(n.index)).slice(0, mesh.instanceMatrix.count);
+      void nearSet;
       for (let slot = 0; slot < list.length; slot++) {
         const idx = list[slot].index;
         mesh.setMatrixAt(slot, tile.baseMatrices[idx]);

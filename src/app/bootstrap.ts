@@ -331,7 +331,7 @@ function animate(time: number) {
   const pos = bus.getPosition();
   const vel = bus.getLinearVelocity();
   const fwd = bus.getForward();
-  cityWorld.update({ position: pos, velocity: vel, forward: fwd, deltaSeconds: frameDt });
+  cityWorld.update({ position: pos, velocity: vel, forward: fwd, deltaSeconds: frameDt, activeCamera: currentMode === 'driver' ? camera : chaseCam });
 
   // Камера для уличных объектов (мировая позиция)
   const activeCamTmp = currentMode === 'driver' ? camera : chaseCam;

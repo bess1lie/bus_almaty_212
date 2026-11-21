@@ -16,11 +16,22 @@ const BODY_H = 3.05;
 const BODY_HALF = BODY_H / 2;
 
 const MAX_SPEED = 22;      // м/с (~80 км/ч)
-const ACCEL = 4.5;         // м/с² — плавный разгон
-const BRAKE = 9;           // м/с²
 const REVERSE_MAX = 6;     // м/с (~22 км/ч)
-const DRAG = 1.4;          // сопротивление
 const MAX_STEER = 0.42;    // рад (~24°)
+
+// Тяжёлый автобус (по аудиту симуляторов)
+const PEAK_ACCEL = 2.8;       // м/с² — тяжёлый, но играбельный разгон (50 км/ч ~15 сек)
+const REVERSE_ACCEL = 0.75;
+const SERVICE_BRAKE = 2.6;   // м/с²
+const HANDBRAKE_DECEL = 4.2;
+const COAST_DRAG = 0.22;
+const WHEELBASE = 6.2;
+const MAX_YAW_RATE = 0.55;
+
+function moveTowards(current: number, target: number, maxDelta: number): number {
+  if (Math.abs(target - current) <= maxDelta) return target;
+  return current + Math.sign(target - current) * maxDelta;
+}
 
 // Старт: реальная дорога primary (w=13) в 2.3 км юго-западнее центра.
 // Точка взята из полилинии OSM road; тангент direction=(+0.1053,-0.9944).
@@ -46,6 +57,15 @@ export class Bus {
 
   private speed = 0;         // м/с, со знаком
   private steer = 0;         // текущий угол руля
+  private throttleActual = 0;
+  private brakeActual = 0;
+  private brakeHeat = 0;
+  private yawRate = 0;
+  private ridePhase = 0;
+  private rideHeave = 0;
+  private readonly forwardTmp = new THREE.Vector3();
+  private readonly planarVelocity = new THREE.Vector3();
+  private readonly lateralVelocity = new THREE.Vector3();
   private visualRoll = 0;    // визуальный крен
   private visualPitch = 0;   // визуальный наклон при торможении
   private lookYaw = 0;
@@ -134,53 +154,87 @@ export class Bus {
     this.visual?.setLook(yaw, pitch);
   }
 
-  /** ДО world.step(), фиксированный шаг. */
+  /** ДО world.step(), фиксированный шаг. Тяжёлая аркадная динамика. */
   update(dt: number, input: Readonly<InputState>) {
-    // --- Скорость с плавной инерцией ---
-    const braking = input.brake > 0 || input.handbrake;
-    if (braking) {
-      const dec = input.handbrake ? BRAKE * 1.8 : BRAKE;
-      if (this.speed > 0) this.speed = Math.max(0, this.speed - dec * dt);
-      if (this.speed < 0) this.speed = Math.min(0, this.speed + dec * dt);
-    } else if (input.throttle > 0) {
-      this.speed = Math.min(MAX_SPEED, this.speed + ACCEL * dt);
-    } else if (input.throttle < 0) {
-      this.speed = Math.max(-REVERSE_MAX, this.speed - ACCEL * 0.7 * dt);
+    const clamp = THREE.MathUtils.clamp;
+
+    // 1. Плавный отклик газа (при открытых дверях тяга заблокирована)
+    const gasTarget = this.doorsOpen ? 0 : clamp(input.throttle, -1, 1);
+    const gasTau = Math.abs(gasTarget) > Math.abs(this.throttleActual) ? 0.45 : 0.25;
+    this.throttleActual = THREE.MathUtils.damp(this.throttleActual, gasTarget, 1 / gasTau, dt);
+
+    // 2. Плавное нарастание тормозного усилия
+    const brakeTarget = input.handbrake ? 1 : clamp(input.brake, 0, 1);
+    this.brakeActual = THREE.MathUtils.damp(this.brakeActual, brakeTarget, 8, dt);
+    const speed01 = clamp(Math.abs(this.speed) / MAX_SPEED, 0, 1);
+
+    // 3. Нагрев тормозов и brake fade
+    this.brakeHeat = clamp(
+      this.brakeHeat + this.brakeActual * speed01 * dt * 0.10 - this.brakeHeat * dt * 0.06,
+      0, 1
+    );
+    const brakeFade = 1 - 0.15 * clamp((this.brakeHeat - 0.25) / 0.75, 0, 1);
+
+    // 4. Изменение скорости
+    if (this.brakeActual > 0.01) {
+      const dec = (input.handbrake ? HANDBRAKE_DECEL : SERVICE_BRAKE) * this.brakeActual * brakeFade;
+      this.speed = moveTowards(this.speed, 0, dec * dt);
+    } else if (Math.abs(this.throttleActual) > 0.02) {
+      if (this.speed * this.throttleActual < 0 && Math.abs(this.speed) > 0.3) {
+        // нельзя мгновенно переключить передний ход на задний
+        this.speed = moveTowards(this.speed, 0, 1.4 * dt);
+      } else {
+        const torqueFactor = clamp(1 - 0.40 * Math.pow(speed01, 1.4), 0.60, 1);
+        const peak = this.throttleActual < 0 ? REVERSE_ACCEL : PEAK_ACCEL;
+        this.speed += this.throttleActual * peak * torqueFactor * dt;
+        this.speed = clamp(this.speed, -REVERSE_MAX, MAX_SPEED);
+      }
     } else {
-      // выбег
-      const sign = Math.sign(this.speed);
-      this.speed -= sign * DRAG * dt;
-      if (Math.abs(this.speed) < 0.08) this.speed = 0;
+      this.speed = moveTowards(this.speed, 0, (COAST_DRAG + speed01 * 0.12) * dt);
     }
 
-    // --- Руль: плавный, чувствительность падает с скоростью ---
-    const speedFactor = Math.max(0.3, 1 - Math.abs(this.speed) / MAX_SPEED);
-    const targetSteer = input.steering * MAX_STEER * speedFactor;
-    this.steer += (targetSteer - this.steer) * Math.min(1, dt * 4);
+    // 5. Инерция руля
+    const speedFactor = Math.max(0.34, 1 - speed01 * 0.65);
+    this.steer = THREE.MathUtils.damp(
+      this.steer, input.steering * MAX_STEER * speedFactor, 1 / 0.30, dt
+    );
 
-    // --- Применяем к телу ---
+    // 6. Направление: кинематика поворота с ограничением yaw rate
     const rot = this.body.rotation();
     const q = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
-    forward.y = 0;
-    if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
-    forward.normalize();
+    this.forwardTmp.set(0, 0, -1).applyQuaternion(q);
+    this.forwardTmp.y = 0;
+    this.forwardTmp.normalize();
 
-    this.body.setLinvel(
-      { x: forward.x * this.speed, y: 0, z: forward.z * this.speed },
-      true
+    const targetYawRate = clamp(
+      -this.speed / WHEELBASE * Math.tan(this.steer), -MAX_YAW_RATE, MAX_YAW_RATE
     );
-    // Поворот: минус, т.к. перед по -Z; знак скорости для заднего хода
-    const turn = -this.steer * Math.sign(this.speed || 1) *
-      Math.min(1, Math.abs(this.speed) / 3) * 1.6;
-    this.body.setAngvel({ x: 0, y: turn, z: 0 }, true);
+    this.yawRate = THREE.MathUtils.damp(this.yawRate, targetYawRate, 4.5, dt);
+    this.body.setAngvel({ x: 0, y: this.yawRate, z: 0 }, true);
 
-    // Визуальный крен/наклон (только меш, не физика)
-    const targetRoll = -this.steer * Math.min(1, Math.abs(this.speed) / 8) * 0.05;
-    // Тормоз → нос вниз (pitch < 0); разгон → нос вверх (pitch > 0).
-    const targetPitch = braking ? -0.03 : (input.throttle > 0 ? 0.02 : 0);
-    this.visualRoll += (targetRoll - this.visualRoll) * Math.min(1, dt * 3);
-    this.visualPitch += (targetPitch - this.visualPitch) * Math.min(1, dt * 3);
+    // 7. Частично сохраняем боковую скорость (инерция кузова)
+    const vel = this.body.linvel();
+    this.planarVelocity.set(vel.x, 0, vel.z);
+    const forwardSpeed = this.planarVelocity.dot(this.forwardTmp);
+    this.lateralVelocity.copy(this.planarVelocity)
+      .addScaledVector(this.forwardTmp, -forwardSpeed)
+      .multiplyScalar(Math.exp(-dt * 2.2));
+    this.planarVelocity.copy(this.forwardTmp).multiplyScalar(this.speed).add(this.lateralVelocity);
+    this.body.setLinvel({ x: this.planarVelocity.x, y: 0, z: this.planarVelocity.z }, true);
+
+    // 8. Реакция тяжёлого кузова
+    const lateralAccel = this.speed * this.yawRate;
+    const targetRoll = clamp(-Math.atan2(lateralAccel, 9.81) * 0.18, -0.045, 0.045);
+    const targetPitch = clamp(
+      -this.brakeActual * 0.028 + Math.max(0, this.throttleActual) * 0.012, -0.03, 0.018
+    );
+    this.visualRoll = THREE.MathUtils.damp(this.visualRoll, targetRoll, 3, dt);
+    this.visualPitch = THREE.MathUtils.damp(this.visualPitch, targetPitch, 2.5, dt);
+
+    // 9. Низкочастотная вибрация кузова
+    this.ridePhase += dt * (2.2 + speed01 * 4.5);
+    this.rideHeave = Math.sin(this.ridePhase) * (0.002 + speed01 * 0.004)
+      + Math.sin(this.ridePhase * 2.7) * 0.001;
   }
 
   /** ПОСЛЕ world.step(). */
@@ -197,10 +251,11 @@ export class Bus {
 
     if (this.visual) {
       this.visual.updateFromPhysics(dt, this.body, this.steer / MAX_STEER);
+      this.visual.root.position.y += this.rideHeave;
       // В driver mode крен кузова НЕ применяем — иначе камера внутри получает двойной крен
       if (this.cameraMode !== 'driver') this.visual.root.quaternion.copy(visualQ);
     } else if (this.fallback) {
-      this.fallback.position.set(pos.x, pos.y, pos.z);
+      this.fallback.position.set(pos.x, pos.y + this.rideHeave, pos.z);
       this.fallback.quaternion.copy(visualQ);
       const spin = (this.speed / 0.55) * dt;
       for (const w of this.fallbackWheels) w.rotation.x += spin;

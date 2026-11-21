@@ -408,23 +408,16 @@ export class OsmTileProvider implements CityTileProvider {
       const kind = classifyBuilding(b.type, rawHeight);
       const height = buildingHeight(b, kind);
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
-      // Нормализованная форма контура: ключ от RELATIVE координат (не абсолютных!),
-      // чтобы прямоугольники разных зданий делили ЭДНУ геометрию → инстансинг работает.
-      const cx0 = b.poly[0][0], cz0 = b.poly[0][1];
-      const shapeKey = `${b.poly.length}_${b.poly.map((p) => `${Math.round((p[0] - cx0) * 20)},${Math.round((p[1] - cz0) * 20)}`).join(';')}`;
-      let footprint = this.footprintCache.get(shapeKey);
-      if (!footprint) {
-        const made = makeFootprintGeometry(b.poly);
-        footprint = made ?? this.getFacade(kind);
-        footprint.userData.buildingKind = kind;
-        if (this.footprintCache.size < 120) this.footprintCache.set(shapeKey, footprint);
-      }
+      // P0 batching: ОДНА общая геометрия на тип здания (4 штуки на игру).
+      // Индивидуальная форма/размер/цвет задаются instanceMatrix + instanceColor.
+      // Уникальные footprint'ы отключаем — они рвали InstancedMesh на сотни батчей.
+      const facade = this.getFacade(kind);
       const source: BuildingSource = {
         position: new THREE.Vector3((minX + maxX) * 0.5 - originX, 0, (minZ + maxZ) * 0.5 - originZ),
         size: new THREE.Vector3(width, height, depth),
         color: buildingColor(kind, seed),
         rotationY: 0,
-        geometry: footprint,
+        geometry: facade,
         collidable: false,
       };
       candidates.push({ source, score: width * depth * (1 + height / 60) });

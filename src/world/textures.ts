@@ -43,6 +43,52 @@ function grain(ctx: CanvasRenderingContext2D, size: number, amount: number, alph
   }
 }
 
+/** Повторный выводFIGURE с учётом краёв тайла (чтобы заплаты не обрывались на шве). */
+function drawWrapped(ctx: CanvasRenderingContext2D, size: number, x: number, y: number, radius: number, draw: () => void) {
+  const ox = x < radius ? [-size, 0] : x + radius > size ? [0, size] : [0];
+  const oy = y < radius ? [-size, 0] : y + radius > size ? [0, size] : [0];
+  for (const dx of ox) for (const dy of oy) {
+    ctx.save(); ctx.translate(dx, dy);
+    ctx.save(); ctx.translate(x, y); draw(); ctx.restore();
+    ctx.restore();
+  }
+}
+
+function drawAsphaltWear(ctx: CanvasRenderingContext2D, size = 256) {
+  // заплаты
+  for (let i = 0; i < 12; i++) {
+    const x = (i * 83 + 31) % size, y = (i * 57 + 21) % size;
+    const w = 14 + (i % 4) * 8, h = 8 + (i % 3) * 5;
+    drawWrapped(ctx, size, x, y, Math.max(w, h), () => {
+      ctx.fillStyle = 'rgba(18,21,23,0.14)';
+      ctx.beginPath(); ctx.ellipse(0, 0, w, h, i * 0.27, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(125,125,118,0.10)'; ctx.lineWidth = 2; ctx.stroke();
+    });
+  }
+  // следы шин
+  for (const y of [80, 93, 192, 205]) {
+    drawWrapped(ctx, size, 128, y, 140, () => {
+      ctx.strokeStyle = 'rgba(12,14,16,0.11)'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(-150, -y + 128); ctx.lineTo(150, -y + 128); ctx.stroke();
+    });
+  }
+  // люки
+  for (const [x, y] of [[55, 145], [192, 48], [210, 225]]) {
+    drawWrapped(ctx, size, x, y, 13, () => {
+      ctx.fillStyle = '#303438'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(150,155,150,0.4)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.stroke();
+      for (let i = -5; i <= 5; i += 5) { ctx.beginPath(); ctx.moveTo(-5, i); ctx.lineTo(5, i); ctx.stroke(); }
+    });
+  }
+  // масляные пятна
+  for (let i = 0; i < 16; i++) {
+    const x = (i * 47 + 17) % size, y = (i * 91 + 39) % size;
+    ctx.fillStyle = 'rgba(15,18,20,0.08)';
+    ctx.beginPath(); ctx.ellipse(x, y, 6 + i % 5, 3 + i % 3, 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
 function asphaltTexture(): THREE.CanvasTexture {
   const { c, ctx } = makeCanvas(256);
   ctx.fillStyle = '#3a3d40';
@@ -55,6 +101,7 @@ function asphaltTexture(): THREE.CanvasTexture {
     ctx.arc(Math.random() * 256, Math.random() * 256, r, 0, Math.PI * 2);
     ctx.fill();
   }
+  drawAsphaltWear(ctx, 256);
   // мелкий гравий
   for (let i = 0; i < 900; i++) {
     const g = 70 + Math.floor(Math.random() * 60);
@@ -99,6 +146,51 @@ function roofTexture(): THREE.CanvasTexture {
   ctx.fillRect(0, 0, 128, 128);
   grain(ctx, 128, 1200, 0.2);
   return toTexture(c, 1);
+}
+
+function drawFacadeDetails(ctx: CanvasRenderingContext2D, kind: BuildingTextureKind) {
+  if (kind === 'apartments') {
+    // балконы: тень плиты + перила
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 3; col++) {
+      const x = 25 + col * 82, y = 47 + row * 55;
+      ctx.fillStyle = 'rgba(65,68,66,0.22)'; ctx.fillRect(x - 5, y + 13, 44, 5);
+      ctx.strokeStyle = 'rgba(56,65,65,0.6)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y + 4); ctx.lineTo(x + 39, y + 4); ctx.lineTo(x + 39, y + 14);
+      ctx.moveTo(x - 3, y + 4); ctx.lineTo(x - 3, y + 14);
+      ctx.moveTo(x + 11, y + 4); ctx.lineTo(x + 11, y + 14);
+      ctx.moveTo(x + 25, y + 4); ctx.lineTo(x + 25, y + 14);
+      ctx.stroke();
+    }
+    // кондиционеры
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 3; col++) {
+      if ((row * 7 + col * 3) % 4 !== 0) continue;
+      const x = 54 + col * 82, y = 43 + row * 55;
+      ctx.fillStyle = '#9da5a4'; ctx.fillRect(x, y, 14, 9);
+      ctx.fillStyle = 'rgba(30,36,38,0.5)'; ctx.fillRect(x + 2, y + 2, 10, 5);
+    }
+  }
+  if (kind === 'commercial') {
+    // козырьки входов
+    for (let col = 0; col < 3; col++) {
+      const x = 15 + col * 88;
+      ctx.fillStyle = '#536e76'; ctx.fillRect(x, 200, 68, 13);
+      ctx.fillStyle = 'rgba(20,25,28,0.3)'; ctx.fillRect(x, 213, 68, 4);
+      ctx.fillStyle = '#303b40'; ctx.fillRect(x + 22, 218, 25, 38);
+      ctx.strokeStyle = 'rgba(230,225,210,0.35)'; ctx.lineWidth = 2; ctx.strokeRect(x + 22, 218, 25, 38);
+    }
+  }
+  if (kind === 'industrial') {
+    // ворота склада
+    for (let col = 0; col < 2; col++) {
+      const x = 30 + col * 128;
+      ctx.fillStyle = '#454c4d'; ctx.fillRect(x, 145, 88, 105);
+      ctx.strokeStyle = 'rgba(180,185,180,0.4)'; ctx.lineWidth = 2;
+      for (let y = 160; y < 245; y += 13) {
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 88, y); ctx.stroke();
+      }
+    }
+  }
 }
 
 function wallTexture(kind: BuildingTextureKind): THREE.CanvasTexture {
@@ -153,6 +245,8 @@ function wallTexture(kind: BuildingTextureKind): THREE.CanvasTexture {
     }
     grain(ctx, 256, 1400, 0.16);
   }
+  drawFacadeDetails(ctx, kind);
+
   // общая копоть снизу
   const g = ctx.createLinearGradient(0, 0, 0, 256);
   g.addColorStop(0, 'rgba(0,0,0,0)');

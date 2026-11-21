@@ -349,9 +349,11 @@ export class CityWorld {
     const minPerType = Math.floor(remaining / Math.max(1, geoArray.length));
 
     for (const [geometry, indices] of geoArray) {
-      const tri = Math.floor((geometry.index?.count ?? geometry.getAttribute('position').count) / 3);
+      const tri = Math.max(1, Math.floor((geometry.index?.count ?? geometry.getAttribute('position').count) / 3));
+      if (remaining < tri) continue; // не превышаем бюджет triangle budget
       const budget = Math.max(minPerType, Math.floor(remaining / Math.max(1, geoArray.length)));
-      const capacity = Math.min(indices.length, Math.max(1, Math.floor(budget / Math.max(1, tri))));
+      const capacity = Math.min(indices.length, Math.floor(budget / tri));
+      if (capacity <= 0) continue;
       const mesh = new THREE.InstancedMesh(geometry, this.materialsFor(geometry), capacity);
       mesh.count = 0;
       mesh.frustumCulled = false;
@@ -385,11 +387,9 @@ export class CityWorld {
     near.sort((a, b) => a.dist - b.dist);
 
     const selected = new Set<number>();
-    const nearSet = new Set(near.map((n) => n.index));
     for (const mesh of tile.detailMeshes) {
-      const all = mesh.userData.allIndices as number[];
-      const list = near.filter((n) => all.includes(n.index)).slice(0, mesh.instanceMatrix.count);
-      void nearSet;
+      const all = new Set<number>(mesh.userData.allIndices as number[]);
+      const list = near.filter((n) => all.has(n.index)).slice(0, mesh.instanceMatrix.count);
       for (let slot = 0; slot < list.length; slot++) {
         const idx = list[slot].index;
         mesh.setMatrixAt(slot, tile.baseMatrices[idx]);

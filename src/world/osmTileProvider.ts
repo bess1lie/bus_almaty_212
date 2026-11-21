@@ -404,9 +404,40 @@ export class OsmTileProvider implements CityTileProvider {
     return g;
   }
 
+  private static worker: Worker | null = null;
+  private static workerPending = new Map<string, { resolve: (v: TileJson) => void; reject: (e: Error) => void }>();
+
   private fetchTile(key: string): Promise<TileJson> {
-    // Общий кэш: один fetch/JSON parse на тайл для всех подсистем
-    return loadTileRaw(key) as Promise<TileJson>;
+    // Общий кэш JSON ( Turtle: StreetMetadata) + Worker для парсинга/валидации
+    if (!OsmTileProvider.worker) {
+      OsmTileProvider.worker = new Worker(new URL('./tile.worker.ts', import.meta.url), { type: 'module' });
+      OsmTileProvider.worker.onmessage = (e: MessageEvent) => {
+        const p = OsmTileProvider.workerPending.get(e.data.key);
+        if (!p) return;
+        OsmTileProvider.workerPending.delete(e.data.key);
+        if (!e.data.ok) { p.reject(new Error(e.data.error)); return; }
+        // Собираем TileJson из transferable массивов
+        const d = e.data;
+        const buildings: TileJson['buildings'] = [];
+        for (let i = 0; i < d.bCount; i++) {
+          const poly: Point2[] = [];
+          for (let j = d.bOffsets[i]; j < d.bOffsets[i + 1]; j += 2) poly.push([d.bPolys[j], d.bPolys[j + 1]]);
+          buildings.push({ poly, h: d.bMeta[i * 3], levels: d.bMeta[i * 3 + 1] || undefined, type: d.types[i], est: true });
+        }
+        const roads: NonNullable<TileJson['roads']> = [];
+        for (let i = 0; i < d.rCount; i++) {
+          const poly: Point2[] = [];
+          for (let j = d.rOffsets[i]; j < d.rOffsets[i + 1]; j += 2) poly.push([d.rPolys[j], d.rPolys[j + 1]]);
+          roads.push({ poly, w: d.rMeta[i * 4], lanes: d.rMeta[i * 4 + 1], oneWay: d.rMeta[i * 4 + 2] === 1, speed: d.rMeta[i * 4 + 3], t: d.roadTypes[i], type: d.roadTypes[i] });
+        }
+        p.resolve({ buildings, roads });
+      };
+    }
+    return new Promise<TileJson>((resolve, reject) => {
+      OsmTileProvider.workerPending.set(key, { resolve, reject });
+      const url = `${import.meta.env.BASE_URL}map/v1/tiles/${key}.json`;
+      OsmTileProvider.worker!.postMessage({ key, url });
+    });
   }
 
   async loadTile(tileX: number, tileZ: number): Promise<CityTilePayload> {

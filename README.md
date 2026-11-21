@@ -43,10 +43,10 @@ npm run dev
 ## Как собрать карту
 ```bash
 # Скачать OSM Казахстана (~226 МБ):
-curl -L https://download.geofabrik.de/asia/kazakhstan/kazakhstan-latest.osm.pbf -o /tmp/kazakhstan-latest.osm.pbf
+curl -L https://download.geofabrik.de/asia/kazakhstan/kazakhstan-latest.osm.pbf -o data/raw/kazakhstan-latest.osm.pbf
 
 # Построить тайлы:
-node --max-old-space-size=12000 tools/build-city.mjs /tmp/kazakhstan-latest.osm.pbf public/map/v1
+node --max-old-space-size=12000 tools/build-city.mjs data/raw/kazakhstan-latest.osm.pbf public/map/v1
 ```
 
 ## Стек

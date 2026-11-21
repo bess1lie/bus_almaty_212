@@ -52,6 +52,10 @@ export class RoadGraph {
       if (remove.has(this.edges[i].id)) this.edges.splice(i, 1);
     }
   }
+  /** Соседние рёбра по узлу (для непрерывного движения трафика). */
+  neighbors(node: number): RoadEdge[] {
+    return this.edges.filter((e) => e.a === node || e.b === node);
+  }
   nearest(x: number, z: number): number {
     let best = -1, bd = Infinity;
     for (let i = 0; i < this.nodes.length; i++) {

@@ -155,7 +155,7 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
   const carDir = new Int8Array(maxCars);     // +1 / -1
   const carSpeed = new Float32Array(maxCars);
   const carYaw = new Float32Array(maxCars);
-  const graphCars: Array<{ ax: number; az: number; ux: number; uz: number; off: number; t: number; length: number } | null> = new Array(maxCars).fill(null);
+  const graphCars: Array<{ ax: number; az: number; ux: number; uz: number; off: number; t: number; length: number; edgeId: number } | null> = new Array(maxCars).fill(null);
 
   const pedStopX = new Float32Array(maxPeds);
   const pedStopZ = new Float32Array(maxPeds);
@@ -234,7 +234,7 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
     carYaw[i] = Math.atan2(-ux, -uz);
     carLane[i] = start[0];
     carAlong[i] = start[1];
-    graphCars[i] = { ax: start[0], az: start[1], ux, uz, off, t, length: len };
+    graphCars[i] = { ax: start[0], az: start[1], ux, uz, off, t, length: len, edgeId: edge.id };
     void px; void pz; void initial; void carAxis;
     return true;
   }
@@ -300,10 +300,33 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
       let gc = graphCars[i];
       if (!gc) continue; // машин без валидного ребра не рисуем
       gc.t += (carSpeed[i] * step) / gc.length;
-      if (gc.t >= 1) {
-        if (!spawnCar(i, false, playerPos.x, playerPos.z)) { graphCars[i] = null; continue; }
-        gc = graphCars[i];
-        if (!gc) continue;
+      if (gc.t >= 1 && graph) {
+        // Продолжаем по соседнему ребру от конечного узла
+        const endNode = graph.nearest(
+          gc.ax + gc.ux * gc.length,
+          gc.az + gc.uz * gc.length,
+        );
+        const nextEdge = endNode >= 0
+          ? graph.neighbors(endNode).find((e) => e.id !== gc!.edgeId && e.a === endNode)
+          : undefined;
+        if (nextEdge && graph.nodes[nextEdge.b]) {
+          const na = graph.nodes[nextEdge.a];
+          const nb = graph.nodes[nextEdge.b];
+          const ndx = nb[0] - na[0], ndz = nb[1] - na[1];
+          const nlen = Math.hypot(ndx, ndz);
+          if (nlen >= 2) {
+            graphCars[i] = {
+              ax: na[0], az: na[1],
+              ux: ndx / nlen, uz: ndz / nlen,
+              off: gc.off, t: 0, length: nlen, edgeId: nextEdge.id,
+            };
+            gc = graphCars[i];
+            if (!gc) continue;
+          } else if (!spawnCar(i, false, playerPos.x, playerPos.z)) { graphCars[i] = null; continue; }
+        } else if (!spawnCar(i, false, playerPos.x, playerPos.z)) { graphCars[i] = null; continue; }
+      } else if (gc.t >= 1) {
+        graphCars[i] = null;
+        continue;
       }
       const distance = gc.t * gc.length;
       const nx = -gc.uz, nz = gc.ux;

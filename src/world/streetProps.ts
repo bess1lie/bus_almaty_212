@@ -859,12 +859,22 @@ export function createStreetProps(
     mesh.setMatrixAt(index, scratchObject.matrix);
   }
 
+  let visibleRefreshElapsed = 0;
+
   function update(cameraPos: THREE.Vector3): void {
     if (disposed) return;
 
-    refreshElapsed += 1 / 60;
-    const dxCam = cameraPos.x - lastCamera.x;
-    const dzCam = cameraPos.z - lastCamera.z;
+    // Пересчёт видимых инстансов не чаще 6-7 раз в секунду,
+    // но сразу при сдвиге камеры > 4 м.
+    visibleRefreshElapsed += 1 / 60;
+    const vdx = cameraPos.x - lastCamera.x;
+    const vdz = cameraPos.z - lastCamera.z;
+    if (visibleRefreshElapsed < 0.15 && vdx * vdx + vdz * vdz < 16) return;
+    visibleRefreshElapsed = 0;
+
+    refreshElapsed += 0.15;
+    const dxCam = vdx;
+    const dzCam = vdz;
     if (refreshElapsed >= 0.75 || dxCam * dxCam + dzCam * dzCam > 2500) {
       refreshElapsed = 0;
       const previous = tileSignature;

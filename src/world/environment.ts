@@ -126,6 +126,33 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
   geo.setIndex(indices);
   geo.computeVertexNormals();
   ridge.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })));
+
+  // Дальний хребет (воздушная перспектива) — бледнее и выше
+  const farSeg = 64;
+  const farStep = 7000 / farSeg;
+  const farPos: number[] = [], farCol: number[] = [], farIdx: number[] = [];
+  const farRock = new THREE.Color(0x737486);
+  const farSnow = new THREE.Color(0xc6c8d1);
+  for (let i = 0; i <= farSeg; i++) {
+    const x = -3500 + i * farStep;
+    const t = i / farSeg;
+    const h = 380 + Math.sin(t * 5.1 + 0.7) * 150 + Math.sin(t * 13.3) * 70;
+    farPos.push(x, -30, ridgeZ + 2600, x, h, ridgeZ + 2200);
+    for (let k = 0; k < 2; k++) {
+      const c = h > 500 ? farSnow : farRock;
+      farCol.push(c.r, c.g, c.b);
+    }
+    if (i < farSeg) {
+      const a = i * 2;
+      farIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  }
+  const farGeo = new THREE.BufferGeometry();
+  farGeo.setAttribute('position', new THREE.Float32BufferAttribute(farPos, 3));
+  farGeo.setAttribute('color', new THREE.Float32BufferAttribute(farCol, 3));
+  farGeo.setIndex(farIdx);
+  farGeo.computeVertexNormals();
+  ridge.add(new THREE.Mesh(farGeo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: true, side: THREE.DoubleSide })));
   scene.add(ridge);
 
   // --- Свет ---
@@ -143,6 +170,7 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
       followCamera.getWorldPosition(_skyPos);
       sky.position.copy(_skyPos);
       clouds.position.set(_skyPos.x, 0, _skyPos.z);
+      ridge.position.set(_skyPos.x, 0, _skyPos.z - 2600);
     }
     // Плавный переход день → ночь за 3–5 секунд
     const nightTarget = scene.userData.isNight === true ? 1 : 0;

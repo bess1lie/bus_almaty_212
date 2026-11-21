@@ -219,7 +219,8 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
       if (a && b) {
         const dx = b[0] - a[0], dz = b[1] - a[1];
         const len = Math.hypot(dx, dz) || 1;
-        const dir = rand() < 0.5 ? 1 : -1;
+        // Для односторонних дорог только направление a→b (dir=+1)
+        const dir = edge.oneWay ? 1 : (rand() < 0.5 ? 1 : -1);
         const ux = (dx / len) * dir, uz = (dz / len) * dir;
         // полосы: смещение перпендикуляру
         const off = (i % 2 === 0 ? 1 : -1) * LANE_OFFSET;

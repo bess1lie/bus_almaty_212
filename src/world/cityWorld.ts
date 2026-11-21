@@ -5,7 +5,10 @@
  */
 
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 import type { World as RapierWorld } from '@dimforge/rapier3d-compat';
+
+function getRapierCompat() { return RAPIER; }
 import { getTextures, type BuildingTextureKind } from './textures';
 
 export const CITY_TILE_SIZE = 2000;
@@ -134,6 +137,8 @@ function countTriangles(object: THREE.Object3D | null): number {
 export class CityWorld {
   readonly graph = new RoadGraph();
   private readonly tileEdges = new Map<string, number[]>(); // edge indices per tile
+  private readonly tileColliders = new Map<string, number[]>(); // Rapier collider handles per tile
+  private readonly world: RapierWorld;
   private readonly tileSize: number;
   private readonly tiles = new Map<string, TileRuntime>();
   private readonly pending = new Set<string>();
@@ -155,6 +160,7 @@ export class CityWorld {
     _rapierWorld: RapierWorld,
     options: CityWorldOptions = {},
   ) {
+    this.world = _rapierWorld;
     this.tileSize = options.tileSize ?? CITY_TILE_SIZE;
     this.onError = options.onTileError;
     this.onLoaded = options.onTileLoaded;
@@ -312,6 +318,26 @@ export class CityWorld {
       root.add(boxMesh);
     }
 
+    // Упрощённые физические коллайдеры для крупных зданий (≤40 на тайл)
+    const R = getRapierCompat();
+    const colliderHandles: number[] = [];
+    if (R) {
+      let made = 0;
+      for (const b of buildings) {
+        if (made >= 40) break;
+        if (b.source.size.x < 8 || b.source.size.z < 8 || b.source.size.y < 6) continue;
+        const wx = root.position.x + b.source.position.x;
+        const wz = root.position.z + b.source.position.z;
+        const desc = R.ColliderDesc.cuboid(b.source.size.x / 2, b.source.size.y / 2, b.source.size.z / 2)
+          .setTranslation(wx, b.source.size.y / 2, wz)
+          .setFriction(0.8);
+        const c = this.world.createCollider(desc);
+        colliderHandles.push(c.handle);
+        made++;
+      }
+    }
+    this.tileColliders.set(key, colliderHandles);
+
     // Ближний LOD: детализированные фасады, сгруппированные по геометрии.
     // Capacity = ВСЕ здания этого типа — выбор ближайших происходит в updateLod().
     const detailMeshes: THREE.InstancedMesh[] = [];
@@ -402,6 +428,14 @@ export class CityWorld {
     });
     const edges = this.tileEdges.get(key);
     if (edges) { this.graph.removeEdges(edges); this.tileEdges.delete(key); }
+    const cols = this.tileColliders.get(key);
+    if (cols) {
+      for (const h of cols) {
+        const c = this.world.getCollider(h);
+        if (c) this.world.removeCollider(c, true);
+      }
+      this.tileColliders.delete(key);
+    }
     this.tiles.delete(key);
     this.onUnloaded?.(tile.x, tile.z);
   }

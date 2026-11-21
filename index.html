@@ -28,6 +28,17 @@
       #loading h1 { font-size: 1.4rem; letter-spacing: .12em; text-transform: uppercase; color: #55C4B6; }
       #loading p { margin-top: 8px; color: #94a3b8; font-size: .9rem; }
       .hud-hidden { opacity: 0 !important; pointer-events: none !important; transition: opacity .2s; }
+      #trip-panel {
+        position: fixed; bottom: 20px; left: 20px;
+        background: rgba(16,30,35,.82); border: 1px solid rgba(85,196,182,.35);
+        border-radius: 8px; padding: 10px 12px; color: #e8f5f1;
+        font: 12px/1.5 system-ui, sans-serif; z-index: 50; min-width: 190px;
+      }
+      .trip-row { display: flex; justify-content: space-between; gap: 16px; }
+      .trip-row span { color: #91aaa6; letter-spacing: .5px; }
+      .trip-row strong { color: #61d0bf; }
+      .trip-row.trip-serving strong { color: #f3a35f; }
+      .trip-msg { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.12); color: #c3b8b5; font-size: 11px; }
     </style>
   </head>
   <body>
@@ -38,6 +49,8 @@
     </div>
 
     <div id="canvas"></div>
+
+    <div id="trip-panel"></div>
 
     <!-- UI Kit: HUD + главное меню -->
     <div class="game-ui is-menu-open" data-theme="sunset" id="game-ui">

@@ -16,6 +16,7 @@ import { createAtmosphere } from '../world/atmosphere';
 import { createTraffic } from '../world/traffic';
 import { RouteTracker } from '../gameplay/routeTracker';
 import { ROUTES } from '../gameplay/routes';
+import { PassengerService } from '../gameplay/passengers';
 import { createStreetProps } from '../world/streetProps';
 import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
@@ -38,6 +39,7 @@ let traffic: ReturnType<typeof createTraffic>;
 let telemetry: Telemetry;
 let basePixelRatio = 1;
 let routeTracker: RouteTracker;
+let passengers: PassengerService;
 let hud: HUD;
 
 let accumulator = 0;
@@ -142,6 +144,7 @@ async function main() {
   setupTouchZones(container);
   setupLookControl(renderer.domElement);
   hud = new HUD();
+  passengers = new PassengerService();
   setupMenuButtons();
 
   // Маршруты: загружаем индекс остановок в фоне
@@ -364,6 +367,14 @@ function animate(time: number) {
     const progress = routeTracker.update(pos.x, pos.z);
     if (progress) {
       hud.setRoute(progress.routeId, progress.nextStop, progress.distanceM);
+      const atStop = progress.distanceM < 30;
+      passengers.update(0.1, atStop, bus.getSpeedKmh(), input.handbrake, bus.doorsOpen, progress.currentStop);
+      const st = passengers.state;
+      hud.updateTrip({
+        onboard: st.onboard, capacity: st.capacity, score: st.score,
+        stops: st.stopsServed, message: st.lastMessage,
+        doors: bus.doorsOpen, serving: st.serving, progress: st.progress,
+      });
     }
     lastHudTime = time;
   }

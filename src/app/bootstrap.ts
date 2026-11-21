@@ -352,6 +352,7 @@ function setupTouchZones(container: HTMLElement) {
 
 function animate(time: number) {
   requestAnimationFrame(animate);
+  const frameStart = performance.now();
 
   const frameDt = Math.min(clock.getDelta(), 0.05);
   if (paused) { renderer.render(scene, currentMode === 'driver' ? camera : chaseCam); return; }
@@ -436,9 +437,9 @@ function animate(time: number) {
   }
 
   const activeCam = currentMode === 'driver' ? camera : chaseCam;
-  const renderStart = performance.now();
   renderer.render(scene, activeCam);
-  if (telemetry.update(time, performance.now() - renderStart, renderer.info.render)) {
+  // Замеряем ПОЛНЫЙ кадр (включая OSM/LOD/StreetProps), а не только render()
+  if (telemetry.update(time, performance.now() - frameStart, renderer.info.render)) {
     renderer.setPixelRatio(basePixelRatio * telemetry.pixelRatioScale);
   }
 }

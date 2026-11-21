@@ -241,6 +241,12 @@ function setupMenuButtons() {
           currentMode = currentMode === 'chase' ? 'driver' : 'chase';
           bus.setCameraMode(currentMode);
           break;
+        case 'drive-mode': {
+          const next = bus.getDriveMode() === 'arcade' ? 'sim' : 'arcade';
+          bus.setDriveMode(next);
+          btn.querySelector('span')!.textContent = next === 'arcade' ? 'Режим: Аркада' : 'Режим: Симулятор';
+          break;
+        }
         case 'handbrake':
           (window as unknown as Record<string, unknown>).__mobile_handbrake = true;
           setTimeout(() => { (window as unknown as Record<string, unknown>).__mobile_handbrake = false; }, 250);
@@ -358,7 +364,7 @@ function animate(time: number) {
   scene.userData.busPosition = pos;
   scene.userData.busQuaternion = bus.body.rotation();
   scene.userData.isNight = scene.userData.timeOfDay === 'night';
-  environment.update();
+  environment.update(frameDt);
   atmosphere.update(frameDt, activeCamTmp);
   traffic.update(frameDt, pos, bus.getForward(), scene.userData.isNight === true);
 

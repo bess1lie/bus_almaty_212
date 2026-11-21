@@ -20,13 +20,10 @@ const REVERSE_MAX = 6;     // м/с (~22 км/ч)
 const MAX_STEER = 0.42;    // рад (~24°)
 
 // Тяжёлый автобус (по аудиту симуляторов)
-const PEAK_ACCEL = 2.8;       // м/с² — тяжёлый, но играбельный разгон (50 км/ч ~15 сек)
 const REVERSE_ACCEL = 0.75;
-const SERVICE_BRAKE = 2.6;   // м/с²
 const HANDBRAKE_DECEL = 4.2;
 const COAST_DRAG = 0.22;
 const WHEELBASE = 6.2;
-const MAX_YAW_RATE = 0.55;
 
 function moveTowards(current: number, target: number, maxDelta: number): number {
   if (Math.abs(target - current) <= maxDelta) return target;
@@ -41,6 +38,21 @@ const START_Z = 0.4;
 const START_YAW = -0.1054; // тангенс дороги (+0.1053,-0.9944): forward -Z → yaw=-atan(0.1053)
 
 export type CameraMode = 'driver' | 'chase';
+export type DriveMode = 'arcade' | 'sim';
+
+interface DriveTuning {
+  accel: number;
+  gasTau: number;
+  brake: number;
+  steerTau: number;
+  yawRate: number;
+  brakeFade: number;
+}
+
+const TUNING: Record<DriveMode, DriveTuning> = {
+  arcade: { accel: 2.4, gasTau: 0.30, brake: 3.0, steerTau: 0.22, yawRate: 0.62, brakeFade: 0.08 },
+  sim: { accel: 2.0, gasTau: 0.45, brake: 2.6, steerTau: 0.30, yawRate: 0.55, brakeFade: 0.15 },
+};
 
 export class Bus {
   readonly body: RigidBody;
@@ -52,6 +64,7 @@ export class Bus {
   private fallbackWheels: THREE.Mesh[] = [];
 
   private cameraMode: CameraMode = 'driver';
+  private driveMode: DriveMode = 'arcade';
   private camera: THREE.PerspectiveCamera;
   doorsOpen = false;
 
@@ -144,6 +157,8 @@ export class Bus {
 
   setCameraMode(mode: CameraMode) { this.cameraMode = mode; }
   getCameraMode(): CameraMode { return this.cameraMode; }
+  setDriveMode(mode: DriveMode) { this.driveMode = mode; }
+  getDriveMode(): DriveMode { return this.driveMode; }
   toggleDoors() {
     this.doorsOpen = !this.doorsOpen;
     this.visual?.setDoorsOpen(this.doorsOpen);
@@ -157,10 +172,11 @@ export class Bus {
   /** ДО world.step(), фиксированный шаг. Тяжёлая аркадная динамика. */
   update(dt: number, input: Readonly<InputState>) {
     const clamp = THREE.MathUtils.clamp;
+    const T = TUNING[this.driveMode];
 
     // 1. Плавный отклик газа (при открытых дверях тяга заблокирована)
     const gasTarget = this.doorsOpen ? 0 : clamp(input.throttle, -1, 1);
-    const gasTau = Math.abs(gasTarget) > Math.abs(this.throttleActual) ? 0.45 : 0.25;
+    const gasTau = Math.abs(gasTarget) > Math.abs(this.throttleActual) ? T.gasTau : T.gasTau * 0.6;
     this.throttleActual = THREE.MathUtils.damp(this.throttleActual, gasTarget, 1 / gasTau, dt);
 
     // 2. Плавное нарастание тормозного усилия
@@ -173,11 +189,11 @@ export class Bus {
       this.brakeHeat + this.brakeActual * speed01 * dt * 0.10 - this.brakeHeat * dt * 0.06,
       0, 1
     );
-    const brakeFade = 1 - 0.15 * clamp((this.brakeHeat - 0.25) / 0.75, 0, 1);
+    const brakeFade = 1 - T.brakeFade * clamp((this.brakeHeat - 0.25) / 0.75, 0, 1);
 
     // 4. Изменение скорости
     if (this.brakeActual > 0.01) {
-      const dec = (input.handbrake ? HANDBRAKE_DECEL : SERVICE_BRAKE) * this.brakeActual * brakeFade;
+      const dec = (input.handbrake ? HANDBRAKE_DECEL : T.brake) * this.brakeActual * brakeFade;
       this.speed = moveTowards(this.speed, 0, dec * dt);
     } else if (Math.abs(this.throttleActual) > 0.02) {
       if (this.speed * this.throttleActual < 0 && Math.abs(this.speed) > 0.3) {
@@ -185,7 +201,7 @@ export class Bus {
         this.speed = moveTowards(this.speed, 0, 1.4 * dt);
       } else {
         const torqueFactor = clamp(1 - 0.40 * Math.pow(speed01, 1.4), 0.60, 1);
-        const peak = this.throttleActual < 0 ? REVERSE_ACCEL : PEAK_ACCEL;
+        const peak = this.throttleActual < 0 ? REVERSE_ACCEL : T.accel;
         this.speed += this.throttleActual * peak * torqueFactor * dt;
         this.speed = clamp(this.speed, -REVERSE_MAX, MAX_SPEED);
       }
@@ -196,7 +212,7 @@ export class Bus {
     // 5. Инерция руля
     const speedFactor = Math.max(0.34, 1 - speed01 * 0.65);
     this.steer = THREE.MathUtils.damp(
-      this.steer, input.steering * MAX_STEER * speedFactor, 1 / 0.30, dt
+      this.steer, input.steering * MAX_STEER * speedFactor, 1 / T.steerTau, dt
     );
 
     // 6. Направление: кинематика поворота с ограничением yaw rate
@@ -207,7 +223,7 @@ export class Bus {
     this.forwardTmp.normalize();
 
     const targetYawRate = clamp(
-      -this.speed / WHEELBASE * Math.tan(this.steer), -MAX_YAW_RATE, MAX_YAW_RATE
+      -this.speed / WHEELBASE * Math.tan(this.steer), -T.yawRate, T.yawRate
     );
     this.yawRate = THREE.MathUtils.damp(this.yawRate, targetYawRate, 4.5, dt);
     this.body.setAngvel({ x: 0, y: this.yawRate, z: 0 }, true);

@@ -132,15 +132,29 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
   const sun = new THREE.DirectionalLight(0xffc48a, 1.5);
   sun.position.set(-120, 90, -160);
   scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x9fb4c8, 0.7));
+  const ambient = new THREE.AmbientLight(0x9fb4c8, 0.7);
+  scene.add(ambient);
+
+  let nightBlend = 0;
 
   // Туман задаётся единственным владельцем — createAtmosphere()
-  function update() {
-    if (!followCamera) return;
-    followCamera.getWorldPosition(_skyPos);
-    sky.position.copy(_skyPos);
-    sunDisc.position.set(_skyPos.x - 360, 250, _skyPos.z - 1600);
-    clouds.position.set(_skyPos.x, 0, _skyPos.z);
+  function update(dt = 0.016) {
+    if (followCamera) {
+      followCamera.getWorldPosition(_skyPos);
+      sky.position.copy(_skyPos);
+      clouds.position.set(_skyPos.x, 0, _skyPos.z);
+    }
+    // Плавный переход день → ночь за 3–5 секунд
+    const nightTarget = scene.userData.isNight === true ? 1 : 0;
+    nightBlend = THREE.MathUtils.damp(nightBlend, nightTarget, 0.7, Math.min(dt, 0.1));
+    sun.intensity = THREE.MathUtils.lerp(1.5, 0.1, nightBlend);
+    ambient.intensity = THREE.MathUtils.lerp(0.7, 0.25, nightBlend);
+    sunDisc.visible = nightBlend < 0.5;
+    (sky.material as THREE.MeshBasicMaterial).color.setRGB(
+      THREE.MathUtils.lerp(1, 0.35, nightBlend),
+      THREE.MathUtils.lerp(1, 0.38, nightBlend),
+      THREE.MathUtils.lerp(1, 0.55, nightBlend),
+    );
   }
 
   return { sky, ridge, sun, sunDisc, clouds, update };

@@ -87,23 +87,10 @@ async function main() {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-  scene.add(ambient);
-
-  const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-  sun.position.set(60, 70, 20);
-  if (!isMobile) {
-    sun.castShadow = true;
-    sun.shadow.mapSize.width = 1024;
-    sun.shadow.mapSize.height = 1024;
-    sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 500;
-    sun.shadow.camera.left = -120;
-    sun.shadow.camera.right = 120;
-    sun.shadow.camera.top = 120;
-    sun.shadow.camera.bottom = -120;
-  }
-  scene.add(sun);
+  // Единая система света — только в createEnvironment()
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // ACES слишком гасит тёмные тона low-poly сцены — оставляем прямой вывод
+  renderer.toneMapping = THREE.NoToneMapping;
 
   environment = createEnvironment(scene, chaseCam);
   atmosphere = createAtmosphere(scene, chaseCam);

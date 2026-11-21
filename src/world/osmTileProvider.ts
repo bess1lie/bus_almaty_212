@@ -30,10 +30,10 @@ interface BuildingStyle {
 }
 
 const STYLES: Record<BuildingKind, BuildingStyle> = {
-  apartments: { rows: 4, columns: 3, windowHeight: 0.045, minHeight: 15, maxHeight: 60, palette: [0xd5d8d4, 0xc7ccc9, 0xe0ded7, 0xbcc5c6] },
-  house: { rows: 2, columns: 2, windowHeight: 0.16, minHeight: 4, maxHeight: 8, palette: [0xc5ad8e, 0xd0bfa6, 0xb9aa97, 0xd6c9b3] },
-  commercial: { rows: 3, columns: 3, windowHeight: 0.085, minHeight: 6, maxHeight: 24, palette: [0x9cabb0, 0xb4b9b4, 0xa5aba8, 0x899ba1] },
-  industrial: { rows: 2, columns: 2, windowHeight: 0.075, minHeight: 6, maxHeight: 18, palette: [0x727a79, 0x626b6b, 0x7e8580] },
+  apartments: { rows: 4, columns: 3, windowHeight: 0.075, minHeight: 15, maxHeight: 60, palette: [0xd4c2a5, 0xc9b79c, 0xe0d1b9, 0xb9aa98] },
+  house: { rows: 2, columns: 2, windowHeight: 0.14, minHeight: 4, maxHeight: 8, palette: [0xb98264, 0xc99878, 0xd1ae8b, 0xa97960] },
+  commercial: { rows: 3, columns: 3, windowHeight: 0.085, minHeight: 6, maxHeight: 24, palette: [0x92aab0, 0xa8b9b5, 0x879ea5, 0xb5b7ae] },
+  industrial: { rows: 2, columns: 2, windowHeight: 0.075, minHeight: 6, maxHeight: 18, palette: [0x7a807d, 0x656f70, 0x89877d] },
 };
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }

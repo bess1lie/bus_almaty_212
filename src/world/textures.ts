@@ -91,7 +91,7 @@ function drawAsphaltWear(ctx: CanvasRenderingContext2D, size = 256) {
 
 function asphaltTexture(): THREE.CanvasTexture {
   const { c, ctx } = makeCanvas(256);
-  ctx.fillStyle = '#3a3d40';
+  ctx.fillStyle = '#43484b';
   ctx.fillRect(0, 0, 256, 256);
   // крупные пятна
   for (let i = 0; i < 40; i++) {

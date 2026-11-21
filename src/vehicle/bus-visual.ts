@@ -49,6 +49,46 @@ function requiredObject(root: THREE.Object3D, name: string): THREE.Object3D {
   return object;
 }
 
+/** Per-material tuning of the GLB bus (according to the art audit palette). */
+function tuneBusMaterials(root: THREE.Object3D): void {
+  const seen = new Set<THREE.Material>();
+  const paint = (m: THREE.MeshStandardMaterial, color: string, r: number, metal: number) => {
+    m.color.set(color); m.roughness = r; m.metalness = metal;
+  };
+  const glow = (m: THREE.MeshStandardMaterial, color: string, intensity: number) => {
+    m.emissive.set(color); m.emissiveIntensity = intensity;
+  };
+  root.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh)) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    for (const src of mats) {
+      if (seen.has(src)) continue;
+      seen.add(src);
+      if (!(src instanceof THREE.MeshStandardMaterial)) continue;
+      const m = src;
+      switch (m.name) {
+        case 'mat_body': paint(m, '#EFEBDD', 0.48, 0.05); break;
+        case 'mat_livery_lower':
+        case 'mat_livery_skirt': paint(m, '#267B73', 0.38, 0.08); break;
+        case 'mat_livery_stripe': paint(m, '#55C4B6', 0.4, 0.05); break;
+        case 'mat_glass': paint(m, '#527783', 0.16, 0.08); m.opacity = 0.4; m.transparent = true; m.depthWrite = false; break;
+        case 'mat_trim': paint(m, '#405961', 0.4, 0.2); break;
+        case 'mat_dark': paint(m, '#20282D', 0.8, 0.02); break;
+        case 'mat_light': paint(m, '#FFF0C9', 0.22, 0); glow(m, '#FFE3A8', 1.3); break;
+        case 'mat_amber': paint(m, '#F39B42', 0.3, 0); glow(m, '#FF9B43', 0.8); break;
+        case 'mat_red': paint(m, '#D84740', 0.3, 0); glow(m, '#FF332B', 0.6); break;
+        case 'mat_wheel': paint(m, '#171B20', 0.97, 0); break;
+        case 'mat_rim': paint(m, '#8B9996', 0.32, 0.3); break;
+        case 'mat_mirror': paint(m, '#AABFC0', 0.25, 0.25); break;
+        case 'mat_display': paint(m, '#55C4B6', 0.25, 0); glow(m, '#36CBB3', 1.0); break;
+        case 'mat_interior': paint(m, '#303C3A', 0.85, 0); break;
+        case 'mat_seat': paint(m, '#24665D', 0.9, 0); break;
+      }
+      m.needsUpdate = true;
+    }
+  });
+}
+
 /**
  * Загружает автобус, устанавливает камеру на camera_driver и подготавливает
  * pivots колёс и дверей. Оси GLB: Y вверх, перед автобуса направлен по -Z.
@@ -61,6 +101,7 @@ export async function createBusVisual(
 ): Promise<BusVisual> {
   const loader = new GLTFLoader();
   const gltf = await loader.loadAsync(modelUrl);
+  tuneBusMaterials(gltf.scene);
   const busRoot = requiredObject(gltf.scene, 'bus_root');
   const cameraDriver = requiredObject(busRoot, 'camera_driver');
 

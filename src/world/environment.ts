@@ -156,10 +156,11 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
   scene.add(ridge);
 
   // --- Свет ---
-  const sun = new THREE.DirectionalLight(0xffc48a, 1.5);
-  sun.position.set(-120, 90, -160);
+  const sun = new THREE.DirectionalLight(0xffd2aa, 2.0);
+  sun.position.set(-120, 85, -160);
+  sun.castShadow = false;
   scene.add(sun);
-  const ambient = new THREE.AmbientLight(0x9fb4c8, 0.7);
+  const ambient = new THREE.HemisphereLight(0xd6e0ec, 0x6b625a, 1.05);
   scene.add(ambient);
 
   let nightBlend = 0;
@@ -175,8 +176,8 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
     // Плавный переход день → ночь за 3–5 секунд
     const nightTarget = scene.userData.isNight === true ? 1 : 0;
     nightBlend = THREE.MathUtils.damp(nightBlend, nightTarget, 0.7, Math.min(dt, 0.1));
-    sun.intensity = THREE.MathUtils.lerp(1.5, 0.1, nightBlend);
-    ambient.intensity = THREE.MathUtils.lerp(0.7, 0.25, nightBlend);
+    sun.intensity = THREE.MathUtils.lerp(2.0, 0.1, nightBlend);
+    ambient.intensity = THREE.MathUtils.lerp(1.05, 0.3, nightBlend);
     sunDisc.visible = nightBlend < 0.5;
     (sky.material as THREE.MeshBasicMaterial).color.setRGB(
       THREE.MathUtils.lerp(1, 0.35, nightBlend),

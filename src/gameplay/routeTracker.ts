@@ -75,16 +75,24 @@ export class RouteTracker {
     let nextName = '—';
     let distance = 0;
 
+    const stops = dir.stops;
     if (near) {
       currentName = near.stop.name_ru ?? near.stop.name ?? 'Остановка';
-      if (near.stop.id !== this.lastStopId && near.dist < 30) {
-        this.lastStopId = near.stop.id;
-        this.passed++;
+      // Прогресс меняем ТОЛЬКО на остановке выбранного маршрута
+      const target = stops[this.passed];
+      if (target && near.dist < 30) {
+        const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]/gi, '');
+        const osn = norm(near.stop.name_ru ?? near.stop.name ?? '');
+        const ttn = norm(target.name_ru || target.name_kz || '');
+        if (osn && ttn && (osn.includes(ttn) || ttn.includes(osn))) {
+          if (near.stop.id !== this.lastStopId) {
+            this.lastStopId = near.stop.id;
+            this.passed++;
+          }
+        }
       }
     }
 
-    // Следующая остановка маршрута: ищем по названию в JSON строки
-    const stops = dir.stops;
     const afterPassed = stops.slice(Math.min(this.passed, stops.length - 1));
     const nextRaw = afterPassed[0];
     if (nextRaw) {

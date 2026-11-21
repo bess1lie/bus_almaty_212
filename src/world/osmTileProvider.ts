@@ -149,136 +149,78 @@ function roadColor(type: string): number {
   return 0x70716c;
 }
 /**
- * Склеивает road pieces одного OSM-way в непрерывную полилинию.
- * Ключ — id до ':' (основной way id). Точка стыка — конец/начало отрезка.
+ * Склеивает road pieces ОДНОГО OSM-way в непрерывную полилинию.
+ * Один проход, без дублирования результата. Склейка только между кусками
+ * с одинаковым base id и совпадающими концами (в т.ч. через границы тайлов).
  */
 function stitchRoadPieces(roads: Array<CityRoad & { t?: string; type?: string }>): CityRoad[] {
   const key = (p: Point2) => `${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`;
+  const baseId = (r: CityRoad) => String(r.id ?? '').split(':')[0] || `anon-${Math.round(r.poly[0]?.[0] ?? 0)}-${Math.round(r.poly[0]?.[1] ?? 0)}`;
 
-  // Склейка по ГЕОМЕТРИИ: концы отрезков с совпадающими координатами
-  // (в т.ч. между тайлами) образуют непрерывную полилинию.
-  const startMap = new Map<string, number[]>();
-  const endMap = new Map<string, number[]>();
+  // Группируем ТОЛЬКО по OSM id — разные ways на перекрёстке не склеиваем (A04)
+  const byId = new Map<string, number[]>();
   for (let i = 0; i < roads.length; i++) {
-    const poly = roads[i].poly;
-    if (poly.length < 2) continue;
-    const s = key(poly[0]);
-    const e = key(poly[poly.length - 1]);
-    (startMap.get(s) ?? startMap.set(s, []).get(s)!).push(i);
-    (endMap.get(e) ?? endMap.set(e, []).get(e)!).push(i);
-  }
-  const usedGeom = new Set<number>();
-  const result: CityRoad[] = [];
-
-  for (let i = 0; i < roads.length; i++) {
-    if (usedGeom.has(i)) continue;
-    usedGeom.add(i);
-    let poly = [...roads[i].poly];
-    const sample = roads[i];
-    let extended = true;
-    while (extended) {
-      extended = false;
-      const ek = key(poly[poly.length - 1]);
-      const sk = key(poly[0]);
-      // ищем отрезок, начинающийся в нашем конце
-      for (const j of endMap.get(ek) ?? []) {
-        if (j === i || usedGeom.has(j)) continue;
-        poly = [...poly, ...roads[j].poly.slice(1)];
-        usedGeom.add(j); extended = true; break;
-      }
-      if (extended) continue;
-      for (const j of startMap.get(ek) ?? []) {
-        if (j === i || usedGeom.has(j)) continue;
-        poly = [...poly, ...roads[j].poly.slice().reverse().slice(1)];
-        usedGeom.add(j); extended = true; break;
-      }
-      if (extended) continue;
-      for (const j of endMap.get(sk) ?? []) {
-        if (j === i || usedGeom.has(j)) continue;
-        poly = [...roads[j].poly.slice(0, -1), ...poly];
-        usedGeom.add(j); extended = true; break;
-      }
-      if (extended) continue;
-      for (const j of startMap.get(sk) ?? []) {
-        if (j === i || usedGeom.has(j)) continue;
-        poly = [...roads[j].poly.slice().reverse().slice(0, -1), ...poly];
-        usedGeom.add(j); extended = true; break;
-      }
-    }
-    if (poly.length >= 2) {
-      result.push({
-        poly, w: sample.w, lanes: sample.lanes, oneWay: sample.oneWay,
-        speed: sample.speed, t: sample.t, type: sample.type ?? sample.t ?? '',
-        id: String(sample.id ?? '').split(':')[0],
-      });
-    }
-  }
-
-  // Fallback: старая склейка по id (на случай несовпадения координат)
-  const byId = new Map<string, Array<CityRoad & { t?: string; type?: string }>>();
-  for (const r of result) {
-    const id = String(r.id ?? '').split(':')[0];
+    if (roads[i].poly.length < 2) continue;
+    const id = baseId(roads[i]);
     const arr = byId.get(id) ?? [];
-    arr.push(r as CityRoad & { t?: string; type?: string });
+    arr.push(i);
     byId.set(id, arr);
   }
 
-  for (const [id, pieces] of byId) {
-    if (pieces.length === 0) continue;
-    const sample = pieces[0];
-    if (pieces.length === 1) {
-      result.push({ ...sample, type: sample.type ?? sample.t ?? '' });
-      continue;
+  const result: CityRoad[] = [];
+  for (const [id, indices] of byId) {
+    // Индексы локальны внутри группы; строим карты концов по ним
+    const startMap = new Map<string, number[]>();
+    const endMap = new Map<string, number[]>();
+    for (const i of indices) {
+      const poly = roads[i].poly;
+      const s = key(poly[0]);
+      const e = key(poly[poly.length - 1]);
+      (startMap.get(s) ?? startMap.set(s, []).get(s)!).push(i);
+      (endMap.get(e) ?? endMap.set(e, []).get(e)!).push(i);
     }
 
-    // Строим цепочки по совпадению концов
-    const chains: Point2[][] = [];
     const used = new Set<number>();
-    for (let i = 0; i < pieces.length; i++) {
+    for (const i of indices) {
       if (used.has(i)) continue;
       used.add(i);
-      let poly = [...pieces[i].poly];
+      let poly = [...roads[i].poly];
+      const sample = roads[i];
       let extended = true;
       while (extended) {
         extended = false;
-        const startK = key(poly[0]);
-        const endK = key(poly[poly.length - 1]);
-        for (let j = 0; j < pieces.length; j++) {
-          if (used.has(j)) continue;
-          const p = pieces[j].poly;
-          if (p.length < 2) continue;
-          if (key(p[p.length - 1]) === startK) {
-            poly = [...p.slice(0, -1), ...poly];
-            used.add(j); extended = true; break;
-          }
-          if (key(p[0]) === endK) {
-            poly = [...poly, ...p.slice(1)];
-            used.add(j); extended = true; break;
-          }
-          if (key(p[0]) === startK) {
-            poly = [...p.slice().reverse().slice(0, -1), ...poly];
-            used.add(j); extended = true; break;
-          }
-          if (key(p[p.length - 1]) === endK) {
-            poly = [...poly, ...p.slice().reverse().slice(1)];
-            used.add(j); extended = true; break;
-          }
+        const ek = key(poly[poly.length - 1]);
+        const sk = key(poly[0]);
+        for (const j of endMap.get(ek) ?? []) {
+          if (j === i || used.has(j)) continue;
+          poly = [...poly, ...roads[j].poly.slice(1)];
+          used.add(j); extended = true; break;
+        }
+        if (extended) continue;
+        for (const j of startMap.get(ek) ?? []) {
+          if (j === i || used.has(j)) continue;
+          poly = [...poly, ...roads[j].poly.slice().reverse().slice(1)];
+          used.add(j); extended = true; break;
+        }
+        if (extended) continue;
+        for (const j of endMap.get(sk) ?? []) {
+          if (j === i || used.has(j)) continue;
+          poly = [...roads[j].poly.slice(0, -1), ...poly];
+          used.add(j); extended = true; break;
+        }
+        if (extended) continue;
+        for (const j of startMap.get(sk) ?? []) {
+          if (j === i || used.has(j)) continue;
+          poly = [...roads[j].poly.slice().reverse().slice(0, -1), ...poly];
+          used.add(j); extended = true; break;
         }
       }
-      if (poly.length >= 2) chains.push(poly);
-    }
-
-    for (const poly of chains) {
-      result.push({
-        poly,
-        w: sample.w,
-        lanes: sample.lanes,
-        oneWay: sample.oneWay,
-        speed: sample.speed,
-        t: sample.t,
-        type: sample.type ?? sample.t ?? '',
-        id,
-      });
+      if (poly.length >= 2) {
+        result.push({
+          poly, w: sample.w, lanes: sample.lanes, oneWay: sample.oneWay,
+          speed: sample.speed, t: sample.t, type: sample.type ?? sample.t ?? '', id,
+        });
+      }
     }
   }
   return result;
@@ -466,17 +408,16 @@ export class OsmTileProvider implements CityTileProvider {
       const kind = classifyBuilding(b.type, rawHeight);
       const height = buildingHeight(b, kind);
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
-      // Реальный контур здания вместо прямоугольного AABB
-      const shapeKey = `${b.poly.length}_${b.poly.map((p) => `${Math.round(p[0])},${Math.round(p[1])}`).join(';')}`;
+      // Нормализованная форма контура: ключ от RELATIVE координат (не абсолютных!),
+      // чтобы прямоугольники разных зданий делили ЭДНУ геометрию → инстансинг работает.
+      const cx0 = b.poly[0][0], cz0 = b.poly[0][1];
+      const shapeKey = `${b.poly.length}_${b.poly.map((p) => `${Math.round((p[0] - cx0) * 20)},${Math.round((p[1] - cz0) * 20)}`).join(';')}`;
       let footprint = this.footprintCache.get(shapeKey);
       if (!footprint) {
         const made = makeFootprintGeometry(b.poly);
         footprint = made ?? this.getFacade(kind);
-        if (made) {
-          footprint.userData.buildingKind = kind;
-          // кэшируем только простые формы, чтобы не раздувать память
-          if (this.footprintCache.size < 400) this.footprintCache.set(shapeKey, made);
-        }
+        footprint.userData.buildingKind = kind;
+        if (this.footprintCache.size < 120) this.footprintCache.set(shapeKey, footprint);
       }
       const source: BuildingSource = {
         position: new THREE.Vector3((minX + maxX) * 0.5 - originX, 0, (minZ + maxZ) * 0.5 - originZ),

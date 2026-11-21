@@ -27,12 +27,21 @@ export class RoadGraph {
     this.idx.set(k, i);
     return i;
   };
-  addRoad(poly: Array<[number, number]>, oneWay: boolean, speed: number, lanes: number) {
+  addRoad(poly: Array<[number, number]>, oneWay: boolean, speed: number, lanes: number): number[] {
+    const added: number[] = [];
     for (let i = 0; i < poly.length - 1; i++) {
       const a = this.index(poly[i][0], poly[i][1]);
       const b = this.index(poly[i + 1][0], poly[i + 1][1]);
       if (a === b) continue;
+      added.push(this.edges.length);
       this.edges.push({ a, b, oneWay, speed, lanes });
+    }
+    return added;
+  }
+  removeEdges(indices: number[]) {
+    // удаляем с конца, чтобы индексы не съехали
+    for (const i of [...indices].sort((a, b) => b - a)) {
+      this.edges.splice(i, 1);
     }
   }
   nearest(x: number, z: number): number {
@@ -124,6 +133,7 @@ function countTriangles(object: THREE.Object3D | null): number {
 
 export class CityWorld {
   readonly graph = new RoadGraph();
+  private readonly tileEdges = new Map<string, number[]>(); // edge indices per tile
   private readonly tileSize: number;
   private readonly tiles = new Map<string, TileRuntime>();
   private readonly pending = new Set<string>();
@@ -248,7 +258,7 @@ export class CityWorld {
       if (Math.hypot(tile.root.position.x - px, tile.root.position.z - pz) > 12000) this.removeTile(key);
     }
 
-    this.camera.getWorldPosition(_cam);
+    frustumCam.getWorldPosition(_cam);
     for (const tile of this.tiles.values()) this.updateLod(tile, _cam.x, _cam.z);
   }
 
@@ -257,7 +267,9 @@ export class CityWorld {
     root.name = `tile-${key}`;
     root.position.set(x * this.tileSize, 0, z * this.tileSize);
     if (payload.roads) root.add(payload.roads);
-    for (const r of payload.roadLines ?? []) this.graph.addRoad(r.poly, r.oneWay, r.speed, r.lanes);
+    const edgeIdx: number[] = [];
+    for (const r of payload.roadLines ?? []) edgeIdx.push(...this.graph.addRoad(r.poly, r.oneWay, r.speed, r.lanes));
+    this.tileEdges.set(key, edgeIdx);
 
     const buildings: BuildingRuntime[] = [];
     const baseMatrices: THREE.Matrix4[] = [];
@@ -388,6 +400,8 @@ export class CityWorld {
         if (mat !== this.boxMaterial && mat !== this.windowMaterial && !Object.values(this.wallMaterials).includes(mat as THREE.MeshStandardMaterial)) mat.dispose();
       }
     });
+    const edges = this.tileEdges.get(key);
+    if (edges) { this.graph.removeEdges(edges); this.tileEdges.delete(key); }
     this.tiles.delete(key);
     this.onUnloaded?.(tile.x, tile.z);
   }

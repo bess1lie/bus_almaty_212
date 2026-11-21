@@ -33,6 +33,7 @@ let cityWorld: CityWorld;
 let streetProps: ReturnType<typeof createStreetProps>;
 let streetMetadata: StreetMetadataProvider;
 let atmosphere: ReturnType<typeof createAtmosphere>;
+let environment: ReturnType<typeof createEnvironment>;
 let traffic: ReturnType<typeof createTraffic>;
 let telemetry: Telemetry;
 let basePixelRatio = 1;
@@ -43,6 +44,7 @@ let accumulator = 0;
 let lastHudTime = 0;
 let lastStreetReport = 0;
 let currentMode: 'driver' | 'chase' = 'chase';
+let paused = false;
 let lookYaw = 0;
 let lookPitch = 0.12; // чуть вверх — видно небо и горы, а не только торпедо
 
@@ -63,7 +65,6 @@ async function main() {
   // 1. Three.js
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f172a);
-  scene.fog = new THREE.FogExp2(0x0f172a, 0.0012);
 
   const aspect = container.clientWidth / container.clientHeight || 16 / 9;
   camera = new THREE.PerspectiveCamera(70, aspect, 0.05, 3000);
@@ -97,7 +98,7 @@ async function main() {
   }
   scene.add(sun);
 
-  createEnvironment(scene);
+  environment = createEnvironment(scene, chaseCam);
   atmosphere = createAtmosphere(scene, chaseCam);
 
   // 2. Физика
@@ -146,11 +147,12 @@ async function main() {
   // Маршруты: загружаем индекс остановок в фоне
   routeTracker = new RouteTracker();
   void routeTracker.load().then(() => {
-    const first = ROUTES[0];
-    if (first) {
-      routeTracker.selectRoute(first, 0);
-      console.info('[routes] загружены:', ROUTES.map((r) => r.id).join(', '));
+    // Не перезаписываем маршрут, если пользователь уже выбрал другой
+    if (!routeTracker.currentRoute) {
+      const first = ROUTES[0];
+      if (first) routeTracker.selectRoute(first, 0);
     }
+    console.info('[routes] загружены:', ROUTES.map((r) => r.id).join(', '));
   }).catch((err) => console.warn('[routes] не загрузились:', err));
 
   clock = new THREE.Clock();
@@ -236,11 +238,22 @@ function setupMenuButtons() {
           currentMode = currentMode === 'chase' ? 'driver' : 'chase';
           bus.setCameraMode(currentMode);
           break;
+        case 'handbrake':
+          (window as unknown as Record<string, unknown>).__mobile_handbrake = true;
+          setTimeout(() => { (window as unknown as Record<string, unknown>).__mobile_handbrake = false; }, 250);
+          break;
         case 'horn':
           playHorn();
           break;
         case 'reset':
           window.location.reload();
+          break;
+        case 'pause':
+          paused = !paused;
+          document.querySelector('.hud')?.classList.toggle('hud-hidden', paused);
+          break;
+        case 'photo':
+          document.querySelector('.hud')?.classList.toggle('hud-hidden');
           break;
       }
     });
@@ -294,6 +307,7 @@ function animate(time: number) {
   requestAnimationFrame(animate);
 
   const frameDt = Math.min(clock.getDelta(), 0.05);
+  if (paused) { renderer.render(scene, currentMode === 'driver' ? camera : chaseCam); return; }
   accumulator = Math.min(accumulator + frameDt, 0.1);
 
   const input = getInput();
@@ -341,6 +355,7 @@ function animate(time: number) {
   scene.userData.busPosition = pos;
   scene.userData.busQuaternion = bus.body.rotation();
   scene.userData.isNight = scene.userData.timeOfDay === 'night';
+  environment.update();
   atmosphere.update(frameDt, activeCamTmp);
   traffic.update(frameDt, pos, bus.getForward(), scene.userData.isNight === true);
 

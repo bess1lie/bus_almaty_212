@@ -193,7 +193,12 @@ export function initInput() {
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', () => {
     kbd.throttle = 0;
+    kbd.brake = 0;
     kbd.steering = 0;
     kbd.handbrake = false;
+    kbd.doors = false;
+    kbd.camera = false;
+    kbd.horn = false;
+    kbd.timeOfDay = false;
   });
 }

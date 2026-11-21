@@ -47,7 +47,7 @@ function createLowPolyClouds(): THREE.Mesh {
   return clouds;
 }
 
-export function createEnvironment(scene: THREE.Scene) {
+export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camera) {
   // --- Небо: градиентный купол ---
   const SKY_R = 2500;
   const skyGeo = new THREE.SphereGeometry(SKY_R, 32, 16);
@@ -134,8 +134,16 @@ export function createEnvironment(scene: THREE.Scene) {
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0x9fb4c8, 0.7));
 
-  // Лёгкая синяя дымка
-  scene.fog = new THREE.FogExp2(0x8a8fa0, 0.00012);
+  // Туман задаётся единственным владельцем — createAtmosphere()
+  function update() {
+    if (!followCamera) return;
+    followCamera.getWorldPosition(_skyPos);
+    sky.position.copy(_skyPos);
+    sunDisc.position.set(_skyPos.x - 360, 250, _skyPos.z - 1600);
+    clouds.position.set(_skyPos.x, 0, _skyPos.z);
+  }
 
-  return { sky, ridge, sun, sunDisc, clouds };
+  return { sky, ridge, sun, sunDisc, clouds, update };
 }
+
+const _skyPos = new THREE.Vector3();

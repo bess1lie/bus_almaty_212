@@ -22,6 +22,7 @@ import { createStreetProps } from '../world/streetProps';
 import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
 import { Telemetry } from '../core/telemetry';
+import { detectQuality } from '../core/quality';
 
 const FIXED_DT = 1 / 60;
 
@@ -130,8 +131,13 @@ async function main() {
   setLoading('Посадка за руль...', loadingTextEl);
   bus = new Bus(scene, camera);
   bus.setCameraMode('chase');
-  const modelUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;
-  const modelPromise = bus.loadModel(modelUrl, camera);
+  // LOD автобуса: 34.9k / 13.1k / 4.5k треугольников.
+  // На слабых устройствах не платим за незаметные детали высокого LOD.
+  const qualityPreset = detectQuality().preset;
+  const busLod = qualityPreset === 'low' ? '-lod2' : qualityPreset === 'medium' ? '-lod1' : '';
+  const modelUrl = `${import.meta.env.BASE_URL}models/vehicles/tevy-non-step-city-bus${busLod}.glb`;
+  const fallbackUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;
+  const modelPromise = bus.loadModel(modelUrl, camera, renderer, fallbackUrl);
 
   // 5. Ввод, звук, UI — сразу
   void initAudio().catch((e) => console.warn('[audio]', e));

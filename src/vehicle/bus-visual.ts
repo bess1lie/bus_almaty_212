@@ -27,6 +27,18 @@ export type BusVisualOptions = {
   cameraFar?: number;
 };
 
+/** Общий интерфейс всех реализаций визуала автобуса (legacy GLB и CC0 GLB). */
+export interface BusVisualLike {
+  readonly root: THREE.Object3D;
+  readonly mirrorCamLeft: THREE.Object3D;
+  readonly mirrorCamRight: THREE.Object3D;
+  readonly doorsOpenAmount: number;
+  setDoorsOpen(open: boolean): void;
+  setLook(yaw: number, pitch: number): void;
+  updateFromPhysics(dt: number, rigidBody: RigidBody, steeringInput: number): void;
+  removeFromScene(): void;
+}
+
 type WheelBinding = {
   pivot: THREE.Object3D;
   spin: THREE.Object3D;
@@ -174,7 +186,7 @@ export async function createBusVisual(
   }
 }
 
-export class BusVisual {
+export class BusVisual implements BusVisualLike {
   readonly sceneObject: THREE.Group;
   readonly root: THREE.Object3D;
   readonly mirrorCamLeft: THREE.Object3D;

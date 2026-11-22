@@ -8,7 +8,8 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { getRapier, getPhysicsWorld } from '../core/rapier';
 import type { RigidBody } from '@dimforge/rapier3d-compat';
 import type { InputState } from '../core/input';
-import { createBusVisual, BusVisual } from './bus-visual';
+import { createBusVisual, type BusVisualLike } from './bus-visual';
+import { createModernBusVisual, type ModernBusLivery } from './bus-visual-modern';
 
 const BUS_LENGTH = 12;
 const BUS_WIDTH = 2.5;
@@ -59,7 +60,7 @@ export class Bus {
   private readonly scene: THREE.Scene;
   private readonly rapi: typeof RAPIER;
 
-  private visual: BusVisual | null = null;
+  private visual: BusVisualLike | null = null;
   private fallback: THREE.Group | null = null;
   private fallbackWheels: THREE.Mesh[] = [];
 
@@ -115,20 +116,32 @@ export class Bus {
     this.buildFallback();
   }
 
-  async loadModel(modelUrl: string, cam: THREE.PerspectiveCamera): Promise<boolean> {
+  async loadModel(
+    modelUrl: string,
+    cam: THREE.PerspectiveCamera,
+    renderer: THREE.WebGLRenderer,
+    fallbackUrl: string,
+    livery: ModernBusLivery = 'golden_hour',
+  ): Promise<boolean> {
+    // Основная модель — CC0 автобус Tevy. Старый GLB остаётся fallback-ом.
     try {
-      this.visual = await createBusVisual(this.scene, cam, modelUrl, { enableShadows: true });
-      if (this.fallback) {
-        this.scene.remove(this.fallback);
-        this.disposeObject(this.fallback);
-        this.fallback = null;
-      }
-      return true;
+      this.visual = await createModernBusVisual(this.scene, cam, modelUrl, { renderer, livery });
     } catch (err) {
-      console.warn('[bus] GLB не загружен, fallback.', err);
-      this.visual = null;
-      return false;
+      console.warn('[bus] современный GLB не загружен, пробуем legacy.', err);
+      try {
+        this.visual = await createBusVisual(this.scene, cam, fallbackUrl, { enableShadows: true });
+      } catch (legacyErr) {
+        console.warn('[bus] GLB не загружен, fallback на примитивы.', legacyErr);
+        this.visual = null;
+        return false;
+      }
     }
+    if (this.fallback) {
+      this.scene.remove(this.fallback);
+      this.disposeObject(this.fallback);
+      this.fallback = null;
+    }
+    return true;
   }
 
   private buildFallback() {

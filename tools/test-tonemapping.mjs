@@ -9,7 +9,7 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 await page.goto('http://localhost:5173/bus_almaty_212/');
 await page.waitForTimeout(8000);
-try { await page.getByText('Свободная езда').click({ timeout: 1500 }); } catch {}
+try { await page.getByText('Свободная езда').click({ timeout: 1500 }); } catch { /* optional action */ }
 await page.evaluate(() => document.querySelector('[data-action="camera"]')?.click());
 await page.waitForTimeout(800);
 for (const [name, mapping, exposure] of [

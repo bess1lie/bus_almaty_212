@@ -18,7 +18,7 @@ page.on('console', m => { if (m.type() === 'error') logs.push('[console.error] '
 page.on('response', r => { if (r.status() >= 400) logs.push(`[HTTP ${r.status()}] ${r.url().slice(-80)}`); });
 await page.goto('http://localhost:5173/bus_almaty_212/', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(3500);
-try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch {}
+try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch { /* optional action */ }
 await page.waitForTimeout(2500);
 
 // Перехватываем chase-камеру без правки кода игры

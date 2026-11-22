@@ -15,7 +15,7 @@ page.on('pageerror', e => logs.push('[PAGEERROR] ' + e.message));
 page.on('console', m => { if (m.type() === 'error' && !m.text().includes('404')) logs.push('[error] ' + m.text().slice(0, 160)); });
 await page.goto('http://localhost:5173/bus_almaty_212/');
 await page.waitForTimeout(7000);
-try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch {}
+try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch { /* optional action */ }
 await page.evaluate(() => document.querySelector('[data-action="camera"]')?.click());
 
 // Перехватываем chase-камеру

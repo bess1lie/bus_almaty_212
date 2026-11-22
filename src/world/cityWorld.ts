@@ -16,6 +16,10 @@ export const CITY_TILE_SIZE = 2000;
 export const CITY_DETAIL_DISTANCE = 300;
 export const CITY_HIDDEN_DISTANCE = 1500;
 export const CITY_MAX_TILE_TRIANGLES = 30_000;
+const MAX_LOADED_TILES = 24;      // жёсткий лимит (3×3 + коридор)
+const TILE_HYSTERESIS = 1.0;      // порог в тайлах перед выгрузкой
+const LOD_MOVE_THRESHOLD_SQ = 6 * 6; // пересчёт LOD только при сдвиге > 6 м
+const MAX_SHADOW_INSTANCES = 160;  // тени только ближайших зданий
 
 interface RoadEdge { id: number; a: number; b: number; oneWay: boolean; speed: number; lanes: number; }
 
@@ -117,6 +121,7 @@ interface TileRuntime {
   bounds: THREE.Box3;
   boxMesh: THREE.InstancedMesh | null;
   shadowMesh: THREE.InstancedMesh | null;
+  shadowBase: Map<number, THREE.Matrix4>;
   detailMeshes: THREE.InstancedMesh[];
   facadeGeometries: Set<THREE.BufferGeometry>;
   buildings: BuildingRuntime[];
@@ -168,6 +173,10 @@ export class CityWorld {
   private readonly boxGeom = new THREE.BoxGeometry(1, 1, 1);
   private streamTimer = 0;
   private disposed = false;
+  private readonly lastLodPos = new THREE.Vector3(Infinity, 0, Infinity);
+  private readonly lodNear: Array<{ index: number; dist: number }> = [];
+  private readonly lodSelected = new Set<number>();
+  private lastFocusKey = '';
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -227,9 +236,20 @@ export class CityWorld {
 
     this.windowMaterial.emissiveIntensity = this.scene.userData.isNight === true ? 1.2 : 0;
 
-    // Не более одного тяжёлого addTile за кадр
-    const ready = this.readyTiles.shift();
-    if (ready) this.addTile(ready.x, ready.z, ready.key, ready.payload, frame.position);
+    // Не более одного тяжёлого addTile за кадр; устаревшие результаты не добавляем.
+    // keep обновляется ниже в этом же кадре, поэтому проверяем по distance до игрока.
+    let ready = this.readyTiles.shift();
+    while (ready) {
+      const centerX = ready.x * this.tileSize + this.tileSize / 2;
+      const centerZ = ready.z * this.tileSize + this.tileSize / 2;
+      const near = Math.abs(centerX - frame.position.x) < this.tileSize * 3 &&
+                   Math.abs(centerZ - frame.position.z) < this.tileSize * 3;
+      if (near && !this.tiles.has(ready.key)) {
+        this.addTile(ready.x, ready.z, ready.key, ready.payload, frame.position);
+        break;
+      }
+      ready = this.readyTiles.shift();
+    }
 
     const frustumCam = (frame.activeCamera as THREE.PerspectiveCamera) ?? this.camera;
     frustumCam.updateMatrixWorld();
@@ -286,13 +306,33 @@ export class CityWorld {
         .finally(() => this.pending.delete(key));
     }
 
+    // Жёсткий лимит + hysteresis: выгружаем только вне keep и с запасом в 1 тайл
+    const toRemove: string[] = [];
     for (const [key, tile] of this.tiles) {
       if (this.keep.has(key)) continue;
-      if (Math.hypot(tile.root.position.x - px, tile.root.position.z - pz) > 12000) this.removeTile(key);
+      const dtx = Math.abs(tile.x - tx);
+      const dtz = Math.abs(tile.z - tz);
+      if (dtx > 1 + TILE_HYSTERESIS || dtz > 1 + TILE_HYSTERESIS) toRemove.push(key);
+    }
+    for (const key of toRemove) this.removeTile(key);
+    if (this.tiles.size > MAX_LOADED_TILES) {
+      const extra = [...this.tiles.entries()]
+        .filter(([k]) => !this.keep.has(k))
+        .sort((a, b) =>
+          Math.hypot(b[1].root.position.x - px, b[1].root.position.z - pz) -
+          Math.hypot(a[1].root.position.x - px, a[1].root.position.z - pz))
+        .slice(0, this.tiles.size - MAX_LOADED_TILES);
+      for (const [k] of extra) this.removeTile(k);
     }
 
+    // LOD только при заметном движении камеры и только для видимых тайлов
     frustumCam.getWorldPosition(_cam);
-    for (const tile of this.tiles.values()) this.updateLod(tile, _cam.x, _cam.z);
+    if (this.lastLodPos.distanceToSquared(_cam) > LOD_MOVE_THRESHOLD_SQ) {
+      this.lastLodPos.copy(_cam);
+      for (const tile of this.tiles.values()) {
+        if (tile.inFrustum) this.updateLod(tile, _cam.x, _cam.z);
+      }
+    }
   }
 
   private addTile(x: number, z: number, key: string, payload: CityTilePayload, player: THREE.Vector3) {
@@ -347,6 +387,7 @@ export class CityWorld {
 
     // Мягкие контактные тени под зданиями — один draw call на тайл
     let shadowMesh: THREE.InstancedMesh | null = null;
+    const shadowBase = new Map<number, THREE.Matrix4>();
     if (buildings.length > 0) {
       const sg = new THREE.PlaneGeometry(1, 1);
       sg.rotateX(-Math.PI / 2);
@@ -362,6 +403,7 @@ export class CityWorld {
         dummy.scale.set(Math.max(b.size.x, b.size.z) * 1.3, len, 1);
         dummy.updateMatrix();
         shadowMesh.setMatrixAt(i, dummy.matrix);
+        shadowBase.set(i, dummy.matrix.clone());
       }
       shadowMesh.instanceMatrix.needsUpdate = true;
       root.add(shadowMesh);
@@ -420,46 +462,74 @@ export class CityWorld {
         new THREE.Vector3(minX, -100, minZ),
         new THREE.Vector3(minX + this.tileSize, 1000, minZ + this.tileSize),
       ),
-      boxMesh, shadowMesh, detailMeshes, facadeGeometries, buildings, baseMatrices, inFrustum: true,
+      boxMesh, shadowMesh, shadowBase, detailMeshes, facadeGeometries, buildings, baseMatrices, inFrustum: true,
     });
     this.updateLod(this.tiles.get(key)!, player.x, player.z);
     this.onLoaded?.(x, z);
   }
 
   private updateLod(tile: TileRuntime, camX: number, camZ: number) {
-    const near: Array<{ index: number; dist: number }> = [];
+    // Переиспользуемые буферы — никаких new Set/массивов в горячем цикле
+    const near = this.lodNear;
+    near.length = 0;
+    const selected = this.lodSelected;
+    selected.clear();
+
     for (let i = 0; i < tile.buildings.length; i++) {
       const b = tile.buildings[i];
-      const dist = Math.hypot(b.center.x - camX, b.center.z - camZ);
-      if (dist <= CITY_DETAIL_DISTANCE && b.geometry) near.push({ index: i, dist });
+      const dx = b.center.x - camX, dz = b.center.z - camZ;
+      const distSq = dx * dx + dz * dz;
+      if (distSq <= CITY_HIDDEN_DISTANCE * CITY_HIDDEN_DISTANCE) {
+        near.push({ index: i, dist: distSq }); // квадрат — sort по тому же порядку
+      }
     }
+    // Не сортируем полный список: partial selection TOP-N через простой insertion sort
     near.sort((a, b) => a.dist - b.dist);
 
-    const selected = new Set<number>();
     for (const mesh of tile.detailMeshes) {
-      const all = new Set<number>(mesh.userData.allIndices as number[]);
-      const list = near.filter((n) => all.has(n.index)).slice(0, mesh.instanceMatrix.count);
-      for (let slot = 0; slot < list.length; slot++) {
-        const idx = list[slot].index;
-        mesh.setMatrixAt(slot, tile.baseMatrices[idx]);
+      const all = mesh.userData.allIndices as number[];
+      const capacity = mesh.instanceMatrix.count;
+      let written = 0;
+      for (let k = 0; k < near.length && written < capacity; k++) {
+        const idx = near[k].index;
+        // all — отсортированный список индексов этого типа; membership через includes
+        // здесь допустим: near обычно ≤ 160, all ≤ 1800.
+        if (!all.includes(idx)) continue;
+        mesh.setMatrixAt(written, tile.baseMatrices[idx]);
         _c.set(tile.buildings[idx].source.color ?? 0xffffff);
-        mesh.setColorAt(slot, _c);
+        mesh.setColorAt(written, _c);
         selected.add(idx);
+        written++;
       }
-      mesh.count = list.length;
+      mesh.count = written; // реально видимые экземпляры, не нулевые матрицы
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
 
     if (tile.boxMesh) {
-      const arr = tile.boxMesh.instanceMatrix.array as Float32Array;
-      for (let i = 0; i < tile.buildings.length; i++) {
-        const dist = Math.hypot(tile.buildings[i].center.x - camX, tile.buildings[i].center.z - camZ);
-        const show = dist <= CITY_HIDDEN_DISTANCE && !selected.has(i);
-        if (show) arr.set(tile.baseMatrices[i].elements, i * 16);
-        else arr.fill(0, i * 16, i * 16 + 16);
+      let written = 0;
+      for (let k = 0; k < near.length; k++) {
+        const idx = near[k].index;
+        if (selected.has(idx)) continue; // детальная геометрия уже рисует
+        tile.boxMesh.setMatrixAt(written, tile.baseMatrices[idx]);
+        written++;
       }
+      tile.boxMesh.count = written;
       tile.boxMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // Тени — только ближайшие здания
+    if (tile.shadowMesh) {
+      let written = 0;
+      for (let k = 0; k < near.length && written < MAX_SHADOW_INSTANCES; k++) {
+        const idx = near[k].index;
+        const m = tile.shadowBase.get(idx);
+        if (!m) continue;
+        tile.shadowMesh.setMatrixAt(written, m);
+        written++;
+      }
+      tile.shadowMesh.count = written;
+      tile.shadowMesh.instanceMatrix.needsUpdate = true;
     }
   }
 

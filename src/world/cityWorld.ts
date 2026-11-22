@@ -198,9 +198,16 @@ export class CityWorld {
       opacity: 0.28, depthWrite: false, toneMapped: false,
       polygonOffset: true, polygonOffsetFactor: -1,
     });
-    const mkWall = (kind: BuildingTextureKind) => new THREE.MeshStandardMaterial({
-      color: 0xffffff, vertexColors: true, roughness: 0.9, map: tex.walls[kind],
-    });
+    const surfaceFor: Record<BuildingTextureKind, keyof typeof tex.pbr> = {
+      apartments: 'facade', house: 'brick', commercial: 'concrete', industrial: 'concrete',
+    };
+    const mkWall = (kind: BuildingTextureKind) => {
+      const maps = tex.pbr[surfaceFor[kind]];
+      return new THREE.MeshStandardMaterial({
+        color: 0xffffff, vertexColors: true, roughness: 0.9, map: tex.walls[kind],
+        normalMap: maps.nor, normalScale: new THREE.Vector2(0.35, 0.35), roughnessMap: maps.rough,
+      });
+    };
     this.wallMaterials = {
       apartments: mkWall('apartments'),
       house: mkWall('house'),

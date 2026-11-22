@@ -330,8 +330,13 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
+  const roadTex = getTextures();
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-    vertexColors: true, map: getTextures().asphalt, roughness: 0.98, metalness: 0, side: THREE.DoubleSide,
+    vertexColors: true, map: roadTex.asphalt,
+    normalMap: roadTex.pbr.asphalt.nor,
+    normalScale: new THREE.Vector2(0.55, 0.55),
+    roughnessMap: roadTex.pbr.asphalt.rough,
+    roughness: 0.98, metalness: 0, side: THREE.DoubleSide,
   }));
   mesh.name = 'road-surface-and-curbs';
   mesh.castShadow = false;

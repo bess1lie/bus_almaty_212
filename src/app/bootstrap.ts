@@ -23,6 +23,7 @@ import { StreetMetadataProvider } from '../world/streetMetadata';
 import { HUD } from '../ui/hud';
 import { Telemetry } from '../core/telemetry';
 import { detectQuality } from '../core/quality';
+import { getTextures, loadPbrTextures } from '../world/textures';
 
 const FIXED_DT = 1 / 60;
 
@@ -88,6 +89,8 @@ async function main() {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
 
+  // PBR-карты подгружаются без блокировки старта: пока используется процедурный fallback.
+  void loadPbrTextures().catch((err) => console.warn('[textures] PBR недоступны', err));
   createCityGround(scene);
 
   // Единая система света — только в createEnvironment()
@@ -192,8 +195,13 @@ async function main() {
 function createCityGround(scene: THREE.Scene): THREE.Mesh {
   const geometry = new THREE.PlaneGeometry(60000, 60000);
   geometry.rotateX(-Math.PI / 2);
+  const groundTex = getTextures();
   const material = new THREE.MeshStandardMaterial({
-    color: 0x596052, roughness: 1, metalness: 0,
+    color: 0xffffff, roughness: 1, metalness: 0,
+    map: groundTex.ground,
+    normalMap: groundTex.pbr.ground.nor,
+    normalScale: new THREE.Vector2(0.15, 0.15),
+    roughnessMap: groundTex.pbr.ground.rough,
   });
   const ground = new THREE.Mesh(geometry, material);
   ground.name = 'city-ground';

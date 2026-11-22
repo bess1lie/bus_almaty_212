@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createRadialShadowTexture } from './textures';
+import { createRadialShadowTexture, getTextures } from './textures';
 
 /** A point is [X, Z]. X=east, Z=south, Y=up. */
 export type StreetPoint = readonly [number, number];
@@ -86,7 +86,6 @@ const TREE_GREEN_COLORS = TREE_GREEN.map((color) => new THREE.Color(color));
 const TREE_TRUNK = '#72513B';
 const LAMP_METAL = '#414B50';
 const LAMP_WARM = '#F3C77B';
-const SIDEWALK_COLOR = '#777D7C';
 const ROAD_LINE_COLOR = '#F1EEE5';
 
 interface WorldRoad {
@@ -459,7 +458,14 @@ export function createStreetProps(
     roughness: 0.65,
     metalness: 0.05,
   });
-  sidewalkMaterial = new THREE.MeshStandardMaterial({ color: SIDEWALK_COLOR, roughness: 1, metalness: 0 });
+  const sidewalkTex = getTextures();
+  sidewalkMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff, roughness: 1, metalness: 0,
+    map: sidewalkTex.sidewalk,
+    normalMap: sidewalkTex.pbr.sidewalk.nor,
+    normalScale: new THREE.Vector2(0.7, 0.7),
+    roughnessMap: sidewalkTex.pbr.sidewalk.rough,
+  });
   lineMaterial = new THREE.LineBasicMaterial({ color: ROAD_LINE_COLOR, transparent: true, opacity: 0.9 });
 
   function makeInstanced(

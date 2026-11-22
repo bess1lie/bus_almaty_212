@@ -1,20 +1,49 @@
 /**
- * textures.ts — процедурные CanvasTexture (без внешних файлов).
- * Асфальт, фасады 4 типов, крыши, тротуары. Создаются один раз.
+ * textures.ts — процедурные CanvasTexture как мгновенный fallback и локальные
+ * CC0 PBR-карты (Poly Haven), которые подгружаются асинхронно.
+ * Текстурный объект один и тот же: подмена .image не требует пересоздания
+ * материалов в уже построенных тайлах.
  */
 
 import * as THREE from 'three';
 
 export type BuildingTextureKind = 'apartments' | 'house' | 'commercial' | 'industrial';
+export type PbrSurface = 'asphalt' | 'sidewalk' | 'roof' | 'ground' | 'concrete' | 'brick' | 'facade';
+
+export interface PbrMaps {
+  nor: THREE.Texture;
+  rough: THREE.Texture;
+}
 
 export interface TextureLibrary {
   asphalt: THREE.CanvasTexture;
   sidewalk: THREE.CanvasTexture;
   roof: THREE.CanvasTexture;
+  ground: THREE.CanvasTexture;
   walls: Record<BuildingTextureKind, THREE.CanvasTexture>;
+  pbr: Record<PbrSurface, PbrMaps>;
 }
 
 let cached: TextureLibrary | null = null;
+let pbrPromise: Promise<void> | null = null;
+
+function dataTexture(bytes: Uint8Array, srgb: boolean): THREE.DataTexture {
+  const t = new THREE.DataTexture(bytes, 1, 1, THREE.RGBAFormat);
+  t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.magFilter = THREE.LinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
+}
+
+function neutralPbr(repeat: number): PbrMaps {
+  const nor = dataTexture(new Uint8Array([128, 128, 255, 255]), false);
+  const rough = dataTexture(new Uint8Array([255, 255, 255, 255]), false);
+  for (const t of [nor, rough]) t.repeat.set(repeat, repeat);
+  return { nor, rough };
+}
 
 /** Мягкая радиальная alpha-маска для контактных теней. */
 export function createRadialShadowTexture(): THREE.CanvasTexture {
@@ -314,19 +343,90 @@ function wallTexture(kind: BuildingTextureKind): THREE.CanvasTexture {
   return toTexture(c, 1);
 }
 
+function groundTexture(): THREE.CanvasTexture {
+  const { c, ctx } = makeCanvas(256);
+  ctx.fillStyle = '#596052';
+  ctx.fillRect(0, 0, 256, 256);
+  grain(ctx, 256, 1800, 0.12);
+  // Плоскость 60 км: один повтор ≈ 30 м — крупный масштаб без муара.
+  return toTexture(c, 60000 / 30);
+}
+
 export function getTextures(): TextureLibrary {
   if (!cached) {
     cached = {
       asphalt: asphaltTexture(),
       sidewalk: sidewalkTexture(),
       roof: roofTexture(),
+      ground: groundTexture(),
       walls: {
         apartments: wallTexture('apartments'),
         house: wallTexture('house'),
         commercial: wallTexture('commercial'),
         industrial: wallTexture('industrial'),
       },
+      pbr: {
+        asphalt: neutralPbr(1),
+        sidewalk: neutralPbr(1),
+        roof: neutralPbr(1),
+        ground: neutralPbr(60000 / 30),
+        concrete: neutralPbr(1),
+        brick: neutralPbr(1),
+        facade: neutralPbr(1),
+      },
     };
   }
   return cached;
+}
+
+/**
+ * Асинхронно подменяет процедурные карты реальными PBR (CC0, 512 px WebP).
+ * Вызывается один раз при старте; игра продолжает работать на fallback-картах,
+ * если сеть/файлы недоступны.
+ */
+export function loadPbrTextures(): Promise<void> {
+  if (pbrPromise) return pbrPromise;
+  pbrPromise = (async () => {
+    const tex = getTextures();
+    const base = `${import.meta.env.BASE_URL}textures/pbr/`;
+    const load = async (url: string): Promise<HTMLImageElement> => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      await img.decode();
+      return img;
+    };
+    const applyDiffuse = async (surface: PbrSurface, target: THREE.Texture) => {
+      try {
+        const img = await load(`${base}${surface}/diff.webp`);
+        target.image = img;
+        target.needsUpdate = true;
+      } catch (err) {
+        console.warn(`[textures] ${surface}: diff недоступен`, err);
+      }
+    };
+    const applyMaps = async (surface: PbrSurface) => {
+      const maps = tex.pbr[surface];
+      try {
+        const [nor, rough] = await Promise.all([
+          load(`${base}${surface}/nor.webp`),
+          load(`${base}${surface}/rough.webp`),
+        ]);
+        maps.nor.image = nor;
+        maps.rough.image = rough;
+        maps.nor.needsUpdate = true;
+        maps.rough.needsUpdate = true;
+      } catch (err) {
+        console.warn(`[textures] ${surface}: PBR-карты недоступны`, err);
+      }
+    };
+    await Promise.all([
+      applyDiffuse('asphalt', tex.asphalt),
+      applyDiffuse('sidewalk', tex.sidewalk),
+      applyDiffuse('roof', tex.roof),
+      applyDiffuse('ground', tex.ground),
+      ...(['asphalt', 'sidewalk', 'roof', 'ground', 'concrete', 'brick', 'facade'] as PbrSurface[]).map(applyMaps),
+    ]);
+  })();
+  return pbrPromise;
 }

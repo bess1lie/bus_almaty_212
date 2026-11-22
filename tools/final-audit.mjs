@@ -22,7 +22,7 @@ async function run(label, contextOptions) {
   });
   await page.goto(BASE);
   await page.waitForTimeout(12000);
-  try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch {}
+  try { await page.getByText('Свободная езда').click({ timeout: 2000 }); } catch { /* action optional */ }
   await page.waitForTimeout(1500);
 
   const stats = await page.evaluate(() => {

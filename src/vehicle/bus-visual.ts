@@ -104,12 +104,15 @@ export async function createBusVisual(
   const busRoot = requiredObject(gltf.scene, 'bus_root');
   const cameraDriver = requiredObject(busRoot, 'camera_driver');
 
-  const enableShadows = options.enableShadows ?? true;
   const dashboardMaterials: THREE.Material[] = [];
   gltf.scene.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    object.castShadow = enableShadows;
-    object.receiveShadow = enableShadows;
+    // Реальные shadow map в сцене не используются (castShadow=false у солнца,
+    // тени — дешёвые transparent-плоскости). Лишние shadow pass только добавляют
+    // draw calls. Оставляем visibile/frustum culling.
+    object.castShadow = false;
+    object.receiveShadow = false;
+    object.frustumCulled = true;
 
     // Приборная панель и валидатор подсвечиваются ночью
     if (/speedometer|tachometer|validator|instrument|route_display/i.test(object.name)) {

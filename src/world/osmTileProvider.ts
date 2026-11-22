@@ -5,7 +5,7 @@ import type {
   BuildingSource,
 } from './cityWorld';
 import type { CityBuilding, CityRoad } from './tiles';
-import { loadTileRaw, setDecodedTile } from './tiles';
+import { getCachedTile, putTile } from './tiles';
 import { getTextures, type BuildingTextureKind } from './textures';
 
 const TILE_SIZE = 2000;
@@ -22,7 +22,12 @@ interface TileBuilding extends CityBuilding {
   buildingLevels?: number | null;
   'building:levels'?: number;
 }
-interface TileJson { buildings?: TileBuilding[]; roads?: Array<CityRoad & { t?: string; type?: string }>; }
+interface TileJson {
+  buildings?: TileBuilding[];
+  roads?: Array<CityRoad & { t?: string; type?: string }>;
+  stops?: import('./tiles').CityStop[];
+  greenZones?: import('./tiles').CityGreenZone[];
+}
 interface VertexData { positions: number[]; colors: number[]; uvs: number[]; }
 interface BuildingStyle {
   rows: number; columns: number; windowHeight: number;
@@ -407,7 +412,6 @@ function isValidBuildingPolygon(poly: unknown): poly is Point2[] {
 }
 
 export class OsmTileProvider implements CityTileProvider {
-  private readonly jsonCache = new Map<string, Promise<TileJson>>();
   private readonly facadeCache = new Map<BuildingKind, THREE.BufferGeometry>();
   private readonly footprintCache = new Map<string, THREE.BufferGeometry>();
 
@@ -421,38 +425,56 @@ export class OsmTileProvider implements CityTileProvider {
   private static workerPending = new Map<string, { resolve: (v: TileJson) => void; reject: (e: Error) => void }>();
 
   private fetchTile(key: string): Promise<TileJson> {
-    // Общий кэш JSON ( Turtle: StreetMetadata) + Worker для парсинга/валидации
-    if (!OsmTileProvider.worker) {
-      OsmTileProvider.worker = new Worker(new URL('./tile.worker.ts', import.meta.url), { type: 'module' });
-      OsmTileProvider.worker.onmessage = (e: MessageEvent) => {
-        const p = OsmTileProvider.workerPending.get(e.data.key);
-        if (!p) return;
-        OsmTileProvider.workerPending.delete(e.data.key);
-        if (!e.data.ok) { p.reject(new Error(e.data.error)); return; }
-        // Собираем TileJson из transferable массивов
-        const d = e.data;
-        const buildings: TileJson['buildings'] = [];
-        for (let i = 0; i < d.bCount; i++) {
-          const poly: Point2[] = [];
-          for (let j = d.bOffsets[i]; j < d.bOffsets[i + 1]; j += 2) poly.push([d.bPolys[j], d.bPolys[j + 1]]);
-          buildings.push({ poly, h: d.bMeta[i * 3], levels: d.bMeta[i * 3 + 1] || undefined, type: d.types[i], est: true });
-        }
-        const roads: NonNullable<TileJson['roads']> = [];
-        for (let i = 0; i < d.rCount; i++) {
-          const poly: Point2[] = [];
-          for (let j = d.rOffsets[i]; j < d.rOffsets[i + 1]; j += 2) poly.push([d.rPolys[j], d.rPolys[j + 1]]);
-          roads.push({ poly, w: d.rMeta[i * 4], lanes: d.rMeta[i * 4 + 1], oneWay: d.rMeta[i * 4 + 2] === 1, speed: d.rMeta[i * 4 + 3], t: d.roadTypes[i], type: d.roadTypes[i] });
-        }
-        const parsed = { buildings, roads } as TileJson;
-        setDecodedTile(key, parsed as unknown as import('./tiles').CityTile);
-        p.resolve(parsed);
-      };
-    }
-    return new Promise<TileJson>((resolve, reject) => {
+    // ЕДИНЫЙ кэш: повторный запрос того же ключа возвращает тот же Promise.
+    const cached = getCachedTile(key);
+    if (cached) return cached as Promise<TileJson>;
+
+    const promise = new Promise<TileJson>((resolve, reject) => {
+      if (!OsmTileProvider.worker) {
+        OsmTileProvider.worker = new Worker(new URL('./tile.worker.ts', import.meta.url), { type: 'module' });
+        OsmTileProvider.worker.onmessage = (e: MessageEvent) => {
+          const d = e.data;
+          const p = OsmTileProvider.workerPending.get(d.key);
+          if (!p) return; // запрос уже отменён/выгружен
+          OsmTileProvider.workerPending.delete(d.key);
+          if (!d.ok) { p.reject(new Error(d.error)); return; }
+
+          const buildings: TileBuilding[] = [];
+          for (let i = 0; i < d.bCount; i++) {
+            const poly: Point2[] = [];
+            for (let j = d.bOffsets[i]; j < d.bOffsets[i + 1]; j += 2) poly.push([d.bPolys[j], d.bPolys[j + 1]]);
+            const bounds: [number, number, number, number] = [
+              d.bBounds[i * 4], d.bBounds[i * 4 + 1], d.bBounds[i * 4 + 2], d.bBounds[i * 4 + 3],
+            ];
+            buildings.push({
+              poly, h: d.bMeta[i * 2], levels: d.bMeta[i * 2 + 1] || undefined,
+              type: d.bTypes[i], est: true, bounds,
+            });
+          }
+          const roads: NonNullable<TileJson['roads']> = [];
+          for (let i = 0; i < d.rCount; i++) {
+            const poly: Point2[] = [];
+            for (let j = d.rOffsets[i]; j < d.rOffsets[i + 1]; j += 2) poly.push([d.rPolys[j], d.rPolys[j + 1]]);
+            roads.push({
+              id: d.rIds[i] || undefined, poly,
+              w: d.rMeta[i * 4], lanes: d.rMeta[i * 4 + 1],
+              oneWay: d.rMeta[i * 4 + 2] === 1, speed: d.rMeta[i * 4 + 3],
+              t: d.rTypes[i], type: d.rTypes[i],
+            });
+          }
+          const parsed: TileJson = { buildings, roads, stops: d.stops, greenZones: d.greenZones };
+          p.resolve(parsed);
+        };
+      }
       OsmTileProvider.workerPending.set(key, { resolve, reject });
       const url = `${import.meta.env.BASE_URL}map/v1/tiles/${key}.json`;
       OsmTileProvider.worker!.postMessage({ key, url });
     });
+
+    putTile(key, promise as Promise<import('./tiles').CityTile>);
+    // При ошибке удаляем запись, чтобы можно было повторить загрузку
+    promise.catch(() => { /* кэш очистит evictTile/clearTileCache */ });
+    return promise;
   }
 
   async loadTile(tileX: number, tileZ: number): Promise<CityTilePayload> {
@@ -525,7 +547,6 @@ export class OsmTileProvider implements CityTileProvider {
   }
 
   dispose(): void {
-    this.jsonCache.clear();
     for (const g of this.facadeCache.values()) g.dispose();
     this.facadeCache.clear();
     for (const g of this.footprintCache.values()) g.dispose();

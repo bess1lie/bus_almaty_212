@@ -5,7 +5,7 @@ import type {
   StreetTileKeyProvider,
   StreetPoint,
 } from './streetProps';
-import { loadTileRaw, getDecodedTile } from './tiles';
+import { getCachedTile } from './tiles';
 
 const TILE_SIZE = 2000;
 const VERSION = 1;
@@ -140,14 +140,8 @@ export class StreetMetadataProvider {
     const existingRequest = this.pending.get(key);
     if (existingRequest) return existingRequest;
 
-    // Приоритет — уже разобранный Worker-ом JSON (без второго fetch/parse)
-    const decoded = getDecodedTile(`${x}_${z}`);
-    if (decoded) {
-      const descriptor = this.buildDescriptor(x, z, decoded);
-      this.descriptors.set(key, descriptor);
-      return Promise.resolve(descriptor);
-    }
-    const request = loadTileRaw(`${x}_${z}`)
+    // Единый кэш Worker: НИКАКОГО второго fetch/JSON.parse.
+    const request = (getCachedTile(`${x}_${z}`) ?? Promise.reject(new Error(`Tile ${x}_${z} not loaded`)))
       .then((json: unknown): StreetTileDescriptor => {
         const payload = normalizePayload(json);
         const descriptor = this.buildDescriptor(x, z, payload);

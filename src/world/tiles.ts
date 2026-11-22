@@ -1,35 +1,58 @@
 /**
- * tiles.ts — типы OSM-городских тайлов и lazy-загрузчик из public/map/v1/tiles.
+ * tiles.ts — единый pipeline загрузки OSM-тайлов.
+ * Один запрос на ключ, один разбор Worker-ом, один общий LRU-кэш
+ * для OsmTileProvider и StreetMetadataProvider.
  */
 
+export type Point2 = [number, number];
+
 export type CityBuilding = {
-  poly: [number, number][];
-  h: number;          // высота, м
-  type: string;       // building:* или эвристический тип
-  est: boolean;       // рост не из OSM
-  levels?: number;    // этажность из OSM building:levels
-  c?: [number, number];
+  poly: Point2[];
+  h: number;
+  type: string;
+  est: boolean;
+  levels?: number;
+  c?: Point2;
+  bounds?: [number, number, number, number]; // minX, maxX, minZ, maxX — из Worker
 };
 
 export type CityRoad = {
   id?: string;
-  poly: [number, number][];
-  w: number;          // ширина, м
+  poly: Point2[];
+  w: number;
   lanes: number;
   oneWay: boolean;
-  speed: number;      // км/ч
+  speed: number;
   type: string;
-  t?: string;         // алиас типа из OSM-пайплайна
+  t?: string;
   sourceLengthM?: number;
   lengthM?: number;
+};
+
+export type CityStop = {
+  id?: string;
+  position: Point2;
+  yaw?: number;
+  model?: string;
+  name?: string;
+  name_ru?: string;
+  name_kz?: string | null;
+};
+
+export type CityGreenZone = {
+  id?: string;
+  points: Point2[];
 };
 
 export type CityTile = {
   buildings: CityBuilding[];
   roads: CityRoad[];
+  stops: CityStop[];
+  greenZones: CityGreenZone[];
 };
 
 const TILE_SIZE = 2000;
+const MAX_CACHE = 32;
 
 export function tileKeyFromPos(x: number, z: number): string {
   return `${Math.floor(x / TILE_SIZE)}_${Math.floor(z / TILE_SIZE)}`;
@@ -40,46 +63,43 @@ export function tileCenter(key: string): [number, number] {
   return [tx * TILE_SIZE + TILE_SIZE / 2, tz * TILE_SIZE + TILE_SIZE / 2];
 }
 
-// Один общий raw-JSON кэш на тайл: все потребители (OsmTileProvider,
-// StreetMetadataProvider) получают ОДИН и тот же разобранный объект.
-const rawCache = new Map<string, Promise<CityTile>>();
+// Единый LRU-кэш: Promise на ключ. Нет второго独立 кэша, нет 32-элементного порога.
+const cache = new Map<string, Promise<CityTile>>();
 
-export function loadTileRaw(key: string): Promise<CityTile> {
-  let p = rawCache.get(key);
-  if (!p) {
-    p = fetch(`${import.meta.env.BASE_URL}map/v1/tiles/${key}.json`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`tile ${key} -> ${r.status}`);
-        return r.json() as Promise<CityTile>;
-      })
-      .catch((err) => {
-        rawCache.delete(key);
-        throw err;
-      });
-    rawCache.set(key, p);
-  }
+export function hasTile(key: string): boolean {
+  return cache.has(key);
+}
+
+export function getCachedTile(key: string): Promise<CityTile> | undefined {
+  // LRU: при обращении поднимаем запись в конец
+  const p = cache.get(key);
+  if (p) { cache.delete(key); cache.set(key, p); }
   return p;
 }
 
-// Уже разобранный Worker-ом JSON — им пользуется StreetMetadata, чтобы не парсить дважды.
-const decodedCache = new Map<string, CityTile>();
-
-export function setDecodedTile(key: string, data: CityTile): void {
-  if (decodedCache.size < 32) decodedCache.set(key, data);
+export function putTile(key: string, promise: Promise<CityTile>): void {
+  cache.delete(key);
+  cache.set(key, promise);
+  evict();
 }
 
-export function getDecodedTile(key: string): CityTile | undefined {
-  return decodedCache.get(key);
+function evict() {
+  while (cache.size > MAX_CACHE) {
+    const oldest = cache.keys().next().value as string | undefined;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
 }
 
-/** @deprecated используйте loadTileRaw */
-export function loadTile(key: string): Promise<CityTile> { return loadTileRaw(key); }
+/** Вызвать при выгрузке тайла из сцены — убрать данные из кэша. */
+export function evictTile(key: string): void {
+  cache.delete(key);
+}
 
-export function clearTileCache() {
-  rawCache.clear();
+export function clearTileCache(): void {
+  cache.clear();
 }
 
 export function tileTiles(): string[] {
-  // все известные ключи тайлов (для статистики/логики)
-  return [...rawCache.keys()];
+  return [...cache.keys()];
 }

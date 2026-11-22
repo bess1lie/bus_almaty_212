@@ -10,6 +10,7 @@ import type { World as RapierWorld } from '@dimforge/rapier3d-compat';
 
 function getRapierCompat() { return RAPIER; }
 import { getTextures, createRadialShadowTexture, type BuildingTextureKind } from './textures';
+import { evictTile } from './tiles';
 
 export const CITY_TILE_SIZE = 2000;
 export const CITY_DETAIL_DISTANCE = 300;
@@ -99,6 +100,7 @@ export interface CityWorldOptions {
   onTileError?: (x: number, z: number, error: unknown) => void;
   onTileLoaded?: (x: number, z: number) => void;
   onTileUnloaded?: (x: number, z: number) => void;
+  onTileEvicted?: (x: number, z: number) => void;
 }
 
 interface BuildingRuntime {
@@ -162,6 +164,7 @@ export class CityWorld {
   private readonly onError?: CityWorldOptions['onTileError'];
   private readonly onLoaded?: CityWorldOptions['onTileLoaded'];
   private readonly onUnloaded?: CityWorldOptions['onTileUnloaded'];
+  private readonly onTileEvicted?: CityWorldOptions['onTileEvicted'];
   private readonly boxGeom = new THREE.BoxGeometry(1, 1, 1);
   private streamTimer = 0;
   private disposed = false;
@@ -178,6 +181,7 @@ export class CityWorld {
     this.onError = options.onTileError;
     this.onLoaded = options.onTileLoaded;
     this.onUnloaded = options.onTileUnloaded;
+    this.onTileEvicted = options.onTileEvicted;
     const tex = getTextures();
     this.boxMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, vertexColors: true });
     this.shadowMaterial = new THREE.MeshBasicMaterial({
@@ -472,6 +476,10 @@ export class CityWorld {
         if (mat !== this.boxMaterial && mat !== this.windowMaterial && mat !== this.shadowMaterial && !Object.values(this.wallMaterials).includes(mat as THREE.MeshStandardMaterial)) mat.dispose();
       }
     });
+    // Очищаем кэш разобранных данных — при долгой поездке он не должен расти
+    evictTile(key);
+    this.onTileEvicted?.(tile.x, tile.z);
+
     const edges = this.tileEdges.get(key);
     if (edges) { this.graph.removeEdges(edges); this.tileEdges.delete(key); }
     const cols = this.tileColliders.get(key);

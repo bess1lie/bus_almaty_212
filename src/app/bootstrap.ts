@@ -117,6 +117,7 @@ async function main() {
       onTileError: (x, z, e) => console.error(`[CityWorld] тайл ${x}_${z}:`, e),
       onTileLoaded: (x, z) => { void streetMetadata.notifyTileLoaded(x, z); },
       onTileUnloaded: (x, z) => streetMetadata.removeTile(x, z),
+      onTileEvicted: (x, z) => streetMetadata.removeTile(x, z),
     }
   );
 
@@ -152,6 +153,12 @@ async function main() {
     }
     console.info('[routes] загружены:', ROUTES.map((r) => r.id).join(', '));
   }).catch((err) => console.warn('[routes] не загрузились:', err));
+
+  if (import.meta.env.DEV) {
+    Object.assign(window, {
+      __busDebug: { scene, bus, cityWorld, traffic, streetProps, renderer },
+    });
+  }
 
   clock = new THREE.Clock();
   window.addEventListener('resize', onResize);

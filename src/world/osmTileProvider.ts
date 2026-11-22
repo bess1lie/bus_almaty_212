@@ -316,7 +316,8 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
       indices.push(a, b, a + 2, a + 2, b, b + 2);
       indices.push(a + 1, a + 3, b + 1, a + 3, b + 3, b + 1);
     }
-    rendered.push(road);
+    // Граф трафика получает РОВНО ту полилинию, по которой построена геометрия
+    rendered.push({ ...road, poly: points });
     remaining -= points.length - 1;
   }
 
@@ -388,6 +389,9 @@ function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   g.setIndex(indices);
+  // Как у facade geometry: центрируем по Y, чтобы matrix с position.y = h/2
+  // ставил основание на землю и для коробок, и для footprint.
+  g.translate(0, -0.5, 0);
   g.computeVertexNormals();
   g.computeBoundingSphere();
   return g;
@@ -511,16 +515,29 @@ export class OsmTileProvider implements CityTileProvider {
         continue;
       }
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
-      // P0 batching: ОДНА общая геометрия на тип здания (4 штуки на игру).
-      // Индивидуальная форма/размер/цвет задаются instanceMatrix + instanceColor.
-      // Уникальные footprint'ы отключаем — они рвали InstancedMesh на сотни батчей.
-      const facade = this.getFacade(kind);
+      // Реальный контур OSM там, где он прост (3–10 вершин). Кэш по RELATIVE
+      // координатам: одинаковые формы делят одну BufferGeometry → инстансинг жив.
+      let geometry = this.getFacade(kind);
+      const p = b.poly;
+      if (p.length >= 3 && p.length <= 10) {
+        const x0 = p[0][0], z0 = p[0][1];
+        const shapeKey = `${p.length}:${p.map((q) => `${Math.round((q[0] - x0) * 4)},${Math.round((q[1] - z0) * 4)}`).join(';')}`;
+        let fp = this.footprintCache.get(shapeKey);
+        if (!fp) {
+          const made = makeFootprintGeometry(p);
+          if (made) {
+            fp = made;
+            if (this.footprintCache.size < 160) this.footprintCache.set(shapeKey, fp);
+          }
+        }
+        if (fp) geometry = fp;
+      }
       const source: BuildingSource = {
         position: new THREE.Vector3(localX, 0, localZ),
         size: new THREE.Vector3(width, height, depth),
         color: buildingColor(kind, seed),
         rotationY: 0,
-        geometry: facade,
+        geometry,
         collidable: true,
       };
       candidates.push({ source, score: width * depth * (1 + height / 60) });

@@ -95,8 +95,10 @@ async function main() {
 
   // Единая система света — только в createEnvironment()
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  // ACES слишком гасит тёмные тона low-poly сцены — оставляем прямой вывод
-  renderer.toneMapping = THREE.NoToneMapping;
+  // Сравнено на реальной сцене (No / ACES / AgX, exposure 1.0–1.4):
+  // ACES с exposure 1.15 сохраняет закат и даёт объём фасадам, AgX слишком плоский.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
 
   environment = createEnvironment(scene, chaseCam);
   atmosphere = createAtmosphere(scene, chaseCam);

@@ -52,7 +52,7 @@ export function createAtmosphere(scene: THREE.Scene, camera: THREE.Camera): Atmo
   const shadowGeometry = new THREE.CircleGeometry(1, 32);
   shadowGeometry.rotateX(-Math.PI / 2);
   const shadowMaterial = new THREE.MeshBasicMaterial({
-    color: 0x171b20, transparent: true, opacity: 0.35,
+    color: 0x171b20, transparent: true, opacity: 0.2,
     depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, toneMapped: false,
   });
   const busShadow = new THREE.Mesh(shadowGeometry, shadowMaterial);

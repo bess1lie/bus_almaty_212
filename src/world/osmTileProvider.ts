@@ -148,14 +148,15 @@ function buildingColor(kind: BuildingKind, seed: number): number {
 
 function roadColor(type: string): number {
   type = type || '';
-  if (type.startsWith('motorway')) return 0x42494d;
-  if (type.startsWith('trunk')) return 0x4d5458;
-  if (type.startsWith('primary')) return 0x555b5d;
-  if (type.startsWith('secondary')) return 0x606566;
-  if (type.startsWith('tertiary')) return 0x696c68;
-  if (type.startsWith('residential')) return 0x73736e;
-  if (type.startsWith('service')) return 0x7b7971;
-  return 0x70716c;
+  // Цвета подсвечены под PBR-карту и ACES: старые значения давали почти чёрную дорогу.
+  if (type.startsWith('motorway')) return 0x8b9398;
+  if (type.startsWith('trunk')) return 0x949ca1;
+  if (type.startsWith('primary')) return 0xa0a6a9;
+  if (type.startsWith('secondary')) return 0xa8acad;
+  if (type.startsWith('tertiary')) return 0xb0b1ab;
+  if (type.startsWith('residential')) return 0xbab9b2;
+  if (type.startsWith('service')) return 0xc0bcb5;
+  return 0xb4b5b0;
 }
 /**
  * Склеивает road pieces ОДНОГО OSM-way в непрерывную полилинию.
@@ -330,6 +331,15 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  // Порядок обхода road-quad'ов даёт нормали вниз: поверхность освещалась
+  // только цветом земли и выглядела чёрной. Разворачиваем их вверх.
+  const roadNormals = geometry.getAttribute('normal') as THREE.BufferAttribute;
+  for (let i = 0; i < roadNormals.count; i++) {
+    if (roadNormals.getY(i) < -0.1) {
+      roadNormals.setXYZ(i, -roadNormals.getX(i), -roadNormals.getY(i), -roadNormals.getZ(i));
+    }
+  }
+  roadNormals.needsUpdate = true;
   geometry.computeBoundingSphere();
   const roadTex = getTextures();
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({

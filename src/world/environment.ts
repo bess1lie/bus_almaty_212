@@ -177,13 +177,14 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
     // Плавный переход день → ночь за 3–5 секунд
     const nightTarget = scene.userData.isNight === true ? 1 : 0;
     nightBlend = THREE.MathUtils.damp(nightBlend, nightTarget, 0.7, Math.min(dt, 0.1));
-    sun.intensity = THREE.MathUtils.lerp(2.0, 0.1, nightBlend);
-    ambient.intensity = THREE.MathUtils.lerp(1.05, 0.3, nightBlend);
+    sun.intensity = THREE.MathUtils.lerp(2.0, 0.07, nightBlend);
+    // Ночь не должна превращать город в чёрные силуэты: мягкий холодный fill.
+    ambient.intensity = THREE.MathUtils.lerp(1.05, 0.55, nightBlend);
     sunDisc.visible = nightBlend < 0.5;
     (sky.material as THREE.MeshBasicMaterial).color.setRGB(
-      THREE.MathUtils.lerp(1, 0.35, nightBlend),
-      THREE.MathUtils.lerp(1, 0.38, nightBlend),
-      THREE.MathUtils.lerp(1, 0.55, nightBlend),
+      THREE.MathUtils.lerp(1, 0.18, nightBlend),
+      THREE.MathUtils.lerp(1, 0.22, nightBlend),
+      THREE.MathUtils.lerp(1, 0.40, nightBlend),
     );
   }
 

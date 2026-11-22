@@ -195,8 +195,8 @@ export class CityWorld {
     const tex = getTextures();
     this.boxMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, vertexColors: true });
     this.shadowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x26313f, alphaMap: createRadialShadowTexture(), transparent: true,
-      opacity: 0.28, depthWrite: false, toneMapped: false,
+      color: 0x2a2f38, alphaMap: createRadialShadowTexture(), transparent: true,
+      opacity: 0.16, depthWrite: false, toneMapped: false,
       polygonOffset: true, polygonOffsetFactor: -1,
     });
     const surfaceFor: Record<BuildingTextureKind, keyof typeof tex.pbr> = {
@@ -442,7 +442,7 @@ export class CityWorld {
       const sunElev = THREE.MathUtils.degToRad(18);
       for (let i = 0; i < buildings.length; i++) {
         const b = buildings[i].source;
-        const len = THREE.MathUtils.clamp(b.size.y / Math.tan(sunElev), 5, 40);
+        const len = THREE.MathUtils.clamp(b.size.y / Math.tan(sunElev), 4, 22);
         dummy.position.set(b.position.x + 0.45 * len, 0.065, b.position.z + 0.3 * len);
         dummy.rotation.set(0, 0.35, 0);
         dummy.scale.set(Math.max(b.size.x, b.size.z) * 1.3, len, 1);

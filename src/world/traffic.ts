@@ -42,8 +42,6 @@ const CAR_HIDE_SQ = 500 * 500; // дальше — не рисуем
 const CAR_RESPAWN_SQ = 620 * 620;
 const PED_HIDE_SQ = 300 * 300;
 const PED_RESPAWN_SQ = 345 * 345;
-const NUDGE_SQ = 10 * 10;      // зона мягкого объезда автобуса
-
 const CAR_COLORS = [0xd4503c, 0x2f6fb8, 0xe8c33a, 0x49976a, 0xd8d8d2] as const;
 const PED_COLORS = [0x4a5568, 0x8b5e4b, 0x3f6b62, 0x7a6a8a, 0xa8926f] as const;
 
@@ -207,7 +205,6 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
 
   const scratch = new THREE.Object3D();
   let initialized = false;
-  let carsInitialized = false;
   let lastNight: boolean | null = null;
   let disposed = false;
 
@@ -288,11 +285,9 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
 
     // --- Машины (только по OSM-графу, без fallback-сетки) ---
     if (graph && graph.edges.length > 0) {
-      let spawned = 0;
       for (let i = 0; i < maxCars; i++) {
-        if (!graphCars[i] && spawnCar(i, true, playerPos.x, playerPos.z)) spawned++;
+        if (!graphCars[i]) spawnCar(i, true, playerPos.x, playerPos.z);
       }
-      if (spawned > 0) carsInitialized = true;
     }
 
     let carCount = 0;
@@ -330,13 +325,13 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
       }
       const distance = gc.t * gc.length;
       const nx = -gc.uz, nz = gc.ux;
-      let x = gc.ax + gc.ux * distance + nx * gc.off;
-      let z = gc.az + gc.uz * distance + nz * gc.off;
+      const x = gc.ax + gc.ux * distance + nx * gc.off;
+      const z = gc.az + gc.uz * distance + nz * gc.off;
       carYaw[i] = Math.atan2(-gc.ux, -gc.uz);
 
-      let dx = x - playerPos.x;
-      let dz = z - playerPos.z;
-      let d2 = dx * dx + dz * dz;
+      const dx = x - playerPos.x;
+      const dz = z - playerPos.z;
+      const d2 = dx * dx + dz * dz;
 
       if (d2 > CAR_RESPAWN_SQ) {
         if (!spawnCar(i, false, playerPos.x, playerPos.z)) { graphCars[i] = null; continue; }

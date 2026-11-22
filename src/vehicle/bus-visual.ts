@@ -255,9 +255,9 @@ export class BusVisual {
       },
     ];
 
+    // Пассажирские двери — только справа (со стороны тротуара, Алматы).
+    // Левые створки удалены из GLB: на их месте цельная боковина с окном.
     const doorDefinitions: Array<{ name: string; direction: -1 | 1 }> = [
-      { name: 'door_left_front_1', direction: -1 },
-      { name: 'door_left_rear_1', direction: 1 },
       { name: 'door_right_front_1', direction: -1 },
       { name: 'door_right_rear_1', direction: 1 },
       { name: 'door_right_front_2', direction: -1 },

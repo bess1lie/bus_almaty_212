@@ -7,7 +7,6 @@ import type {
 } from './streetProps';
 import { getCachedTile } from './tiles';
 
-const TILE_SIZE = 2000;
 const VERSION = 1;
 
 type PointLike =

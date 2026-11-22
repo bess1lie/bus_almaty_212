@@ -400,7 +400,6 @@ function urlForPublicAsset(path: string): string {
 export function createStreetProps(
   scene: THREE.Scene,
   getTileKeys: StreetTileKeyProvider,
-  options: StreetPropsOptions = {},
 ): StreetPropsController {
   const gridOrigin = getGridOrigin(scene);
   const loader = new GLTFLoader();
@@ -437,7 +436,7 @@ export function createStreetProps(
   let modernStopTriangles = 0;
   let disposed = false;
   let tileSignature = '';
-  let lastCamera = new THREE.Vector3(Number.POSITIVE_INFINITY, 0, 0);
+  const lastCamera = new THREE.Vector3(Number.POSITIVE_INFINITY, 0, 0);
   let refreshElapsed = Number.POSITIVE_INFINITY;
   let sourceStopReady = false;
 

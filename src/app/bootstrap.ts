@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import { initPhysics, stepPhysics, createStaticFloor, getEventQueue } from '../core/rapier';
+import { initPhysics, stepPhysics, createStaticFloor } from '../core/rapier';
 import { getPhysicsWorld } from '../core/rapier';
 import { initInput, getInput, clearFrameFlags } from '../core/input';
 import { initAudio, updateEngine, playHorn, playDoors } from '../core/audio';

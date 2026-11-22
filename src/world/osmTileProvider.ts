@@ -6,7 +6,7 @@ import type {
 } from './cityWorld';
 import type { CityBuilding, CityRoad } from './tiles';
 import { getCachedTile, putTile } from './tiles';
-import { getTextures, type BuildingTextureKind } from './textures';
+import { getTextures } from './textures';
 
 const TILE_SIZE = 2000;
 const MAX_TILE_TRIANGLES = 30_000;

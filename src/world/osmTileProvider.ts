@@ -5,7 +5,7 @@ import type {
   BuildingSource,
 } from './cityWorld';
 import type { CityBuilding, CityRoad } from './tiles';
-import { loadTileRaw } from './tiles';
+import { loadTileRaw, setDecodedTile } from './tiles';
 import { getTextures, type BuildingTextureKind } from './textures';
 
 const TILE_SIZE = 2000;
@@ -268,6 +268,7 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
   let remaining = Math.floor(triangleBudget / 6);
   const roadType = (r: CityRoad & { t?: string }) => r.type ?? r.t ?? '';
   const sorted = [...roads].sort((a, b) => roadPriority(roadType(a)) - roadPriority(roadType(b)));
+  const rendered: CityRoad[] = []; // только реально построенные сегменты → в граф трафика
 
   for (const road of sorted) {
     if (remaining <= 0) break;
@@ -310,9 +311,11 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
       indices.push(a, b, a + 2, a + 2, b, b + 2);
       indices.push(a + 1, a + 3, b + 1, a + 3, b + 3, b + 1);
     }
+    rendered.push(road);
     remaining -= points.length - 1;
   }
 
+  group.userData.renderedRoads = rendered;
   if (positions.length === 0) { group.userData.triangleCount = 0; return group; }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -440,7 +443,9 @@ export class OsmTileProvider implements CityTileProvider {
           for (let j = d.rOffsets[i]; j < d.rOffsets[i + 1]; j += 2) poly.push([d.rPolys[j], d.rPolys[j + 1]]);
           roads.push({ poly, w: d.rMeta[i * 4], lanes: d.rMeta[i * 4 + 1], oneWay: d.rMeta[i * 4 + 2] === 1, speed: d.rMeta[i * 4 + 3], t: d.roadTypes[i], type: d.roadTypes[i] });
         }
-        p.resolve({ buildings, roads });
+        const parsed = { buildings, roads } as TileJson;
+        setDecodedTile(key, parsed as unknown as import('./tiles').CityTile);
+        p.resolve(parsed);
       };
     }
     return new Promise<TileJson>((resolve, reject) => {
@@ -508,7 +513,7 @@ export class OsmTileProvider implements CityTileProvider {
     return {
       buildings,
       roads,
-      roadLines: stitched
+      roadLines: ((roads.userData.renderedRoads as CityRoad[]) ?? [])
         .filter((r) => DRIVABLE_ROADS.has(r.type ?? r.t ?? ''))
         .map((r) => ({
           poly: r.poly,

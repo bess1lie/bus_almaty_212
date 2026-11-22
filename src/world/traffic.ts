@@ -344,14 +344,8 @@ export function createTraffic(scene: THREE.Scene, graph?: RoadGraph): TrafficCon
       }
       if (d2 > CAR_HIDE_SQ) continue; // компакция instance-индексов скрывает машину
 
-      // Мягкий визуальный объезд автобуса (физики у трафика нет).
-      if (d2 < NUDGE_SQ) {
-        let d = Math.sqrt(d2);
-        if (d < 1e-3) { dx = 1; dz = 0; d = 1; }
-        const push = (10 - d) * 0.35;
-        x += (dx / d) * push;
-        z += (dz / d) * push;
-      }
+      // Раньше здесь машину «отталкивали» от автобуса на 3.5 м — это выносило
+      // её с проезжей части на тротуар. Оставляем строго на полосе.
 
       scratch.position.set(x, CAR_Y, z);
       scratch.rotation.set(0, carYaw[i], 0);

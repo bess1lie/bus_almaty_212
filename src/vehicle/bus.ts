@@ -98,7 +98,8 @@ export class Bus {
       .enabledRotations(false, true, false);
     this.body = world.createRigidBody(bodyDesc);
 
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(BUS_LENGTH / 2, BODY_HALF, BUS_WIDTH / 2);
+    // GLB вытянут по Z: длина 12 м — ось Z, ширина 2.5 м — ось X.
+    const colliderDesc = RAPIER.ColliderDesc.cuboid(BUS_WIDTH / 2, BODY_HALF, BUS_LENGTH / 2);
     colliderDesc.setMass(12000);
     colliderDesc.setFriction(0.5);
     world.createCollider(colliderDesc, this.body);
@@ -133,7 +134,7 @@ export class Bus {
   private buildFallback() {
     const group = new THREE.Group();
     const body = new THREE.Mesh(
-      new THREE.BoxGeometry(BUS_LENGTH, BODY_H, BUS_WIDTH),
+      new THREE.BoxGeometry(BUS_WIDTH, BODY_H, BUS_LENGTH),
       new THREE.MeshStandardMaterial({ color: 0x1a5f7a })
     );
     body.position.y = 0;

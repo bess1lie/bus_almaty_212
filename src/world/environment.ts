@@ -166,9 +166,10 @@ export function createEnvironment(scene: THREE.Scene, followCamera?: THREE.Camer
   let nightBlend = 0;
 
   // Туман задаётся единственным владельцем — createAtmosphere()
-  function update(dt = 0.016) {
-    if (followCamera) {
-      followCamera.getWorldPosition(_skyPos);
+  function update(dt = 0.016, activeCamera?: THREE.Camera) {
+    const cam = activeCamera ?? followCamera;
+    if (cam) {
+      cam.getWorldPosition(_skyPos);
       sky.position.copy(_skyPos);
       clouds.position.set(_skyPos.x, 0, _skyPos.z);
       ridge.position.set(_skyPos.x, 0, _skyPos.z - 2600);

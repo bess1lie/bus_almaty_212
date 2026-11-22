@@ -15,8 +15,6 @@ const CAMERA_MOUNT_Y = -0.32; // чуть выше — козырёк/потол
 const CAMERA_MOUNT_Z = 0.55;
 
 // Положение руля относительно bus_root (приподнят, чтобы оставаться в кадре).
-const STEERING_WHEEL_TARGET_Y = -0.05;
-const STEERING_WHEEL_SCALE = 0.82;
 
 // Лёгкий наклон камеры при поворотах.
 const MAX_CAMERA_ROLL = THREE.MathUtils.degToRad(2);
@@ -37,7 +35,8 @@ type WheelBinding = {
 
 type DoorLeafBinding = {
   object: THREE.Object3D;
-  baseZ: number;
+  restPosition: THREE.Vector3;
+  restQuaternion: THREE.Quaternion;
   direction: -1 | 1;
 };
 
@@ -215,9 +214,8 @@ export class BusVisual {
     this.rollRig = rollRig;
 
     this.steeringWheel = requiredObject(root, 'steering_wheel');
-    // Координата задаётся непосредственно в локальной системе bus_root.
-    this.steeringWheel.position.y = STEERING_WHEEL_TARGET_Y;
-    this.steeringWheel.scale.setScalar(STEERING_WHEEL_SCALE);
+    // Сохраняем авторский трансформ GLB без принудительного смещения.
+    // MAP: исходно руль на (-0.62, -0.39, -4.82) и это правильно для посадки.
     this.steeringWheelRestZ = this.steeringWheel.rotation.z;
     // Стрелки приборов (опционально — если модель их содержит)
     this.speedNeedle = root.getObjectByName('speedometer_needle') ?? null;
@@ -265,7 +263,12 @@ export class BusVisual {
 
     this.doorLeaves = doorDefinitions.map(({ name, direction }) => {
       const object = requiredObject(root, name);
-      return { object, baseZ: object.position.z, direction };
+      return {
+        object,
+        restPosition: object.position.clone(),
+        restQuaternion: object.quaternion.clone(),
+        direction,
+      };
     });
 
     // Проверка групп при загрузке. Ошибки структуры обнаруживаются сразу,
@@ -397,8 +400,9 @@ export class BusVisual {
     );
 
     for (const leaf of this.doorLeaves) {
-      leaf.object.position.z =
-        leaf.baseZ + leaf.direction * DOOR_TRAVEL * this.doorOpenAmount;
+      leaf.object.position.copy(leaf.restPosition);
+      leaf.object.quaternion.copy(leaf.restQuaternion);
+      leaf.object.position.z += leaf.direction * DOOR_TRAVEL * this.doorOpenAmount;
     }
   }
 

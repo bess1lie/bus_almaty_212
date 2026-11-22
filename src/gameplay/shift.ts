@@ -94,7 +94,8 @@ export class ShiftManager {
   tick(deltaM: number, jerk: number) {
     if (!this.active) return;
     this.distanceM += Math.max(0, deltaM);
-    this.smoothSum += Math.max(0, 1 - jerk * 10);
+    // jerk здесь — ускорение м/с²; комфортный предел ~2.5 м/с²
+    this.smoothSum += Math.max(0, 1 - Math.max(0, jerk - 2.5) / 6);
     this.smoothSamples++;
   }
 

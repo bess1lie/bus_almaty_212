@@ -61,7 +61,7 @@ export interface StreetPropsOptions {
 }
 
 export interface StreetPropsController {
-  update(cameraPos: THREE.Vector3): void;
+  update(cameraPos: THREE.Vector3, dt?: number): void;
   dispose(): void;
   getStats(): { tiles: number; trees: number; lamps: number; sidewalks: number; lines: number; stops: number };
 }
@@ -880,18 +880,18 @@ export function createStreetProps(
 
   let visibleRefreshElapsed = 0;
 
-  function update(cameraPos: THREE.Vector3): void {
+  function update(cameraPos: THREE.Vector3, dt = 1 / 60): void {
     if (disposed) return;
 
     // Пересчёт видимых инстансов не чаще 6-7 раз в секунду,
     // но сразу при сдвиге камеры > 4 м.
-    visibleRefreshElapsed += 1 / 60;
+    visibleRefreshElapsed += dt;
     const vdx = cameraPos.x - lastCamera.x;
     const vdz = cameraPos.z - lastCamera.z;
     if (visibleRefreshElapsed < 0.15 && vdx * vdx + vdz * vdz < 16) return;
     visibleRefreshElapsed = 0;
 
-    refreshElapsed += 0.15;
+    refreshElapsed += dt;
     const dxCam = vdx;
     const dzCam = vdz;
     if (refreshElapsed >= 0.75 || dxCam * dxCam + dzCam * dzCam > 2500) {

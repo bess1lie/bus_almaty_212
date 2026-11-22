@@ -61,6 +61,17 @@ export function loadTileRaw(key: string): Promise<CityTile> {
   return p;
 }
 
+// Уже разобранный Worker-ом JSON — им пользуется StreetMetadata, чтобы не парсить дважды.
+const decodedCache = new Map<string, CityTile>();
+
+export function setDecodedTile(key: string, data: CityTile): void {
+  if (decodedCache.size < 32) decodedCache.set(key, data);
+}
+
+export function getDecodedTile(key: string): CityTile | undefined {
+  return decodedCache.get(key);
+}
+
 /** @deprecated используйте loadTileRaw */
 export function loadTile(key: string): Promise<CityTile> { return loadTileRaw(key); }
 

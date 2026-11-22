@@ -5,7 +5,7 @@ import type {
   StreetTileKeyProvider,
   StreetPoint,
 } from './streetProps';
-import { loadTileRaw } from './tiles';
+import { loadTileRaw, getDecodedTile } from './tiles';
 
 const TILE_SIZE = 2000;
 const VERSION = 1;
@@ -140,7 +140,13 @@ export class StreetMetadataProvider {
     const existingRequest = this.pending.get(key);
     if (existingRequest) return existingRequest;
 
-    // Общий кэш с OsmTileProvider — один запрос/парсинг на тайл
+    // Приоритет — уже разобранный Worker-ом JSON (без второго fetch/parse)
+    const decoded = getDecodedTile(`${x}_${z}`);
+    if (decoded) {
+      const descriptor = this.buildDescriptor(x, z, decoded);
+      this.descriptors.set(key, descriptor);
+      return Promise.resolve(descriptor);
+    }
     const request = loadTileRaw(`${x}_${z}`)
       .then((json: unknown): StreetTileDescriptor => {
         const payload = normalizePayload(json);

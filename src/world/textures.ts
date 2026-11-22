@@ -310,7 +310,8 @@ function wallTexture(kind: BuildingTextureKind): THREE.CanvasTexture {
   g.addColorStop(1, 'rgba(20,20,20,0.16)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 256, 256);
-  return toTexture(c, 3);
+  // Повтор 3 дублировал нарисованные балконы/окна и ломал масштаб деталей.
+  return toTexture(c, 1);
 }
 
 export function getTextures(): TextureLibrary {

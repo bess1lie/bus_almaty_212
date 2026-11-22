@@ -379,9 +379,12 @@ function animate(time: number) {
   updateEngine(Math.min(1, bus.getSpeedKmh() / 90), input.throttle > 0 ? 1 : 0);
   clearFrameFlags();
 
+  // Арбитраж источников: клавиатура/геймпад приоритетнее тача.
+  // Math.max ломал задний ход: -1 превращался в 0.
+  const hasKbThrottle = Math.abs(input.throttle) > 0.01;
   const merged = {
     ...input,
-    throttle: Math.max(input.throttle, touchThrottle),
+    throttle: hasKbThrottle ? input.throttle : (Math.abs(touchThrottle) > 0.01 ? touchThrottle : input.throttle),
     brake: Math.max(input.brake, touchBrake),
     steering: input.steering !== 0 ? input.steering : touchSteer,
   };
@@ -397,7 +400,8 @@ function animate(time: number) {
   const pos = bus.getPosition();
   if (lastPos && shift.state.active) {
     const dm = pos.distanceTo(lastPos);
-    const jerk = Math.abs(bus.getSpeedKmh() - lastSpeed) / 3.6;
+    // Ускорение (м/с²), нормированное на deltaTime — оценка не зависит от FPS
+    const jerk = Math.abs(bus.getSpeedKmh() - lastSpeed) / 3.6 / Math.max(0.001, frameDt);
     shift.tick(dm, jerk);
   }
   if (lastPos) lastPos.copy(pos); else lastPos = pos.clone();
@@ -409,11 +413,11 @@ function animate(time: number) {
   // Камера для уличных объектов (мировая позиция)
   const activeCamTmp = currentMode === 'driver' ? camera : chaseCam;
   activeCamTmp.updateMatrixWorld();
-  streetProps.update(activeCamTmp.getWorldPosition(_tmpCamPos));
+  streetProps.update(activeCamTmp.getWorldPosition(_tmpCamPos), frameDt);
   scene.userData.busPosition = pos;
   scene.userData.busQuaternion = bus.body.rotation();
   scene.userData.isNight = scene.userData.timeOfDay === 'night';
-  environment.update(frameDt);
+  environment.update(frameDt, activeCamTmp);
   atmosphere.update(frameDt, activeCamTmp);
   traffic.update(frameDt, pos, bus.getForward(), scene.userData.isNight === true);
 

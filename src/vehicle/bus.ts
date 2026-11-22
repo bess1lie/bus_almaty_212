@@ -287,9 +287,9 @@ export class Bus {
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
       forward.y = 0;
       forward.normalize();
-      const camPos = new THREE.Vector3(pos.x - forward.x * 10, pos.y + 3.5, pos.z - forward.z * 10);
-      chaseCam.position.lerp(camPos, Math.min(1, dt * 8));
-      chaseCam.lookAt(pos.x + forward.x * 15, pos.y + 1.2, pos.z + forward.z * 15);
+      const camPos = new THREE.Vector3(pos.x - forward.x * 18, pos.y + 7, pos.z - forward.z * 18);
+      chaseCam.position.lerp(camPos, Math.min(1, dt * 5));
+      chaseCam.lookAt(pos.x, pos.y + 1.5, pos.z);
     }
   }
 

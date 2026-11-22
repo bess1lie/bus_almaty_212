@@ -274,8 +274,18 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
     if (!road.poly || road.poly.length < 2) continue;
     const points = samplePolyline(road.poly, Math.min(remaining, road.poly.length - 1));
     if (points.length < 2) continue;
-    const halfWidth = clamp(road.w / 2, 2.2, 11);
-    const curb = 0.24;
+    const rt = roadType(road);
+    let minHalf = 2.2, maxHalf = 11;
+    if (rt.startsWith('motorway') || rt.startsWith('trunk')) { minHalf = 7; maxHalf = 14; }
+    else if (rt.startsWith('primary')) { minHalf = 6; maxHalf = 12; }
+    else if (rt.startsWith('secondary')) { minHalf = 5; maxHalf = 10; }
+    else if (rt.startsWith('tertiary')) { minHalf = 3.5; maxHalf = 7; }
+    else if (rt.startsWith('residential') || rt.startsWith('service')) { minHalf = 2.5; maxHalf = 6; }
+    if (road.lanes >= 4) minHalf = Math.max(minHalf, 6);
+    if (road.lanes >= 6) minHalf = Math.max(minHalf, 9);
+    if (road.lanes === 1) maxHalf = Math.min(maxHalf, 4.5);
+    const halfWidth = clamp(road.w / 2, minHalf, maxHalf);
+    const curb = 0.35; // чуть шире, чтобы читались обочины
     const asphaltBase = new THREE.Color(roadColor(roadType(road)));
     const vs = positions.length / 3;
 

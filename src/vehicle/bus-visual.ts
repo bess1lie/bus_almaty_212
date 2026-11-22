@@ -4,7 +4,7 @@ import type { RigidBody } from '@dimforge/rapier3d-compat';
 
 const WHEEL_RADIUS = 0.425;
 const MAX_FRONT_STEER_RAD = 0.50;
-const MAX_STEERING_WHEEL_RAD = 2.45;
+const MAX_STEERING_WHEEL_RAD = 1.35; // ~77° в каждую сторону, реалистичный упор руля
 const DOOR_TRAVEL = 0.30;
 const DOOR_DAMPING = 8.0;
 

@@ -7,6 +7,7 @@ import type {
 import type { CityBuilding, CityRoad } from './tiles';
 import { getCachedTile, putTile } from './tiles';
 import { getTextures } from './textures';
+import { canonicalFootprint, cleanPolygon, triangulatePolygon, upwardFace } from './polygon';
 
 const TILE_SIZE = 2000;
 const MAX_TILE_TRIANGLES = 30_000;
@@ -347,19 +348,21 @@ function buildRoads(roads: CityRoad[], tileX: number, tileZ: number, triangleBud
 }
 
 /**
- * Экструзия реального полигона здания в геометрию с Questions base Y=0, top Y=1.
- * Стены + крыша. Возвращает normalized geometry для instance matrix (scale = size).
+ * Экструзия реального полигона здания в геометрию с base Y=0, top Y=1.
+ * Стены и крыша идут в отдельных material groups (0 — стены, 1 — крыша).
+ * Возвращает нормализованную геометрию для instance matrix (scale = size).
  */
-function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
-  if (poly.length < 3) return null;
-  // Нормализуем контур в [0..1] по X/Z, Y будет 0..1
+export function makeFootprintGeometry(poly: Point2[], kind: BuildingKind): THREE.BufferGeometry | null {
+  const clean = cleanPolygon(poly);
+  if (clean.length < 3) return null;
+  // Нормализуем контур в [-0.5..0.5] по X/Z, Y будет 0..1.
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-  for (const [x, z] of poly) {
-    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-    minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+  for (const p of clean) {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minZ = Math.min(minZ, p.y); maxZ = Math.max(maxZ, p.y);
   }
   const w = maxX - minX || 1, d = maxZ - minZ || 1;
-  const norm = poly.map(([x, z]) => [(x - minX) / w - 0.5, (z - minZ) / d - 0.5] as Point2);
+  const norm = clean.map((p) => new THREE.Vector2((p.x - minX) / w - 0.5, (p.y - minZ) / d - 0.5));
 
   const positions: number[] = [];
   const colors: number[] = [];
@@ -371,22 +374,27 @@ function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
   for (let i = 0; i < norm.length; i++) {
     const a = norm[i], b = norm[(i + 1) % norm.length];
     const base = positions.length / 3;
-    positions.push(a[0], 0, a[1], b[0], 0, b[1], b[0], 1, b[1], a[0], 1, a[1]);
+    positions.push(a.x, 0, a.y, b.x, 0, b.y, b.x, 1, b.y, a.x, 1, a.y);
     const shade = 0.82 + (i % 3) * 0.07;
     for (let k = 0; k < 4; k++) { C(shade, shade, shade); }
     uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
     indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
+  const wallIndexCount = indices.length;
 
-  // Крыша: triangle fan по центроиду
-  let cx = 0, cz = 0;
-  for (const [x, z] of norm) { cx += x; cz += z; }
-  cx /= norm.length; cz /= norm.length;
+  // Крыша: корректная триангуляция вогнутых контуров (уши, не веер из центра).
+  const faces = triangulatePolygon(clean);
+  if (!faces) return null;
   const roofBase = positions.length / 3;
-  positions.push(cx, 1, cz); C(0.55, 0.6, 0.62); uvs.push(0.5, 0.5);
-  for (const [x, z] of norm) { positions.push(x, 1, z); C(0.55, 0.6, 0.62); uvs.push(x + 0.5, z + 0.5); }
-  for (let i = 0; i < norm.length; i++) {
-    indices.push(roofBase, roofBase + 1 + i, roofBase + 1 + ((i + 1) % norm.length));
+  for (const p of norm) {
+    positions.push(p.x, 1, p.y);
+    C(0.55, 0.6, 0.62);
+    uvs.push(p.x + 0.5, p.y + 0.5);
+  }
+  for (const [i, j, k] of faces) {
+    const order = upwardFace(norm[i], norm[j], norm[k]);
+    const tri = [i, j, k];
+    for (let t = 0; t < 3; t++) indices.push(roofBase + tri[order[t]]);
   }
 
   const g = new THREE.BufferGeometry();
@@ -394,6 +402,11 @@ function makeFootprintGeometry(poly: Point2[]): THREE.BufferGeometry | null {
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   g.setIndex(indices);
+  // Индекс 2 = roofMaterial в materialsFor(); индекс 1 зарезервирован за окнами фасада.
+  g.addGroup(0, wallIndexCount, 0);
+  g.addGroup(wallIndexCount, indices.length - wallIndexCount, 2);
+  // Классификация материала обязательна: materialsFor() читает именно это поле.
+  g.userData.buildingKind = kind;
   // Как у facade geometry: центрируем по Y, чтобы matrix с position.y = h/2
   // ставил основание на землю и для коробок, и для footprint.
   g.translate(0, -0.5, 0);
@@ -520,19 +533,20 @@ export class OsmTileProvider implements CityTileProvider {
         continue;
       }
       const seed = (tileX * 73856093) ^ (tileZ * 19349663) ^ (i * 83492791);
-      // Реальный контур OSM там, где он прост (3–10 вершин). Кэш по RELATIVE
-      // координатам: одинаковые формы делят одну BufferGeometry → инстансинг жив.
+      // Реальный OSM-контур квантуется в один из немногочисленных архитипов:
+      // форма и тип здания попадают в ключ кэша, поэтому материалы не смешиваются,
+      // а число уникальных BufferGeometry (и draw calls) остаётся ограниченным.
       let geometry = this.getFacade(kind);
       const p = b.poly;
       if (p.length >= 3 && p.length <= 10) {
-        const x0 = p[0][0], z0 = p[0][1];
-        const shapeKey = `${p.length}:${p.map((q) => `${Math.round((q[0] - x0) * 4)},${Math.round((q[1] - z0) * 4)}`).join(';')}`;
+        const canonical = canonicalFootprint(p);
+        const shapeKey = `${kind}:${canonical.map((q) => `${Math.round(q[0] * 100)},${Math.round(q[1] * 100)}`).join(';')}`;
         let fp = this.footprintCache.get(shapeKey);
         if (!fp) {
-          const made = makeFootprintGeometry(p);
+          const made = makeFootprintGeometry(canonical, kind);
           if (made) {
             fp = made;
-            if (this.footprintCache.size < 160) this.footprintCache.set(shapeKey, fp);
+            if (this.footprintCache.size < 80) this.footprintCache.set(shapeKey, fp);
           }
         }
         if (fp) geometry = fp;

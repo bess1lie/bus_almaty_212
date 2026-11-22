@@ -163,6 +163,7 @@ export class CityWorld {
   private readonly readyTiles: Array<{ x: number; z: number; key: string; payload: CityTilePayload }> = [];
   private readonly keep = new Set<string>();
   private readonly boxMaterial: THREE.MeshStandardMaterial;
+  private readonly roofMaterial: THREE.MeshStandardMaterial;
   private readonly shadowMaterial: THREE.MeshBasicMaterial;
   private readonly wallMaterials: Record<BuildingTextureKind, THREE.MeshStandardMaterial>;
   private readonly windowMaterial: THREE.MeshStandardMaterial;
@@ -218,11 +219,48 @@ export class CityWorld {
       color: 0xffffff, vertexColors: true, roughness: 0.35,
       emissive: 0xffb66e, emissiveIntensity: 0,
     });
+    this.roofMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff, vertexColors: true, roughness: 0.88,
+      map: tex.roof,
+      normalMap: tex.pbr.roof.nor,
+      normalScale: new THREE.Vector2(0.4, 0.4),
+      roughnessMap: tex.pbr.roof.rough,
+    });
+    // Индексы 0/1 в geometry.groups: у фасада это стены/окна, у footprint — стены/крыша.
+    this.installBuildingUvShader([...Object.values(this.wallMaterials), this.roofMaterial]);
+  }
+
+  /**
+   * Масштабирует UV каждого инстанса по его реальным размерам, не добавляя
+   * атрибутов и draw calls. instanceMatrix уже содержит scale (ширина, высота,
+   * глубина): стены получают (ширина, высота), крыша — (ширина, глубина).
+   */
+  private installBuildingUvShader(materials: THREE.Material[]): void {
+    for (const material of materials) {
+      material.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <uv_vertex>', `
+            vec2 buildingUvScale = vec2(1.0);
+            #ifdef USE_INSTANCING
+              vec3 iScale = vec3(
+                length(instanceMatrix[0].xyz),
+                length(instanceMatrix[1].xyz),
+                length(instanceMatrix[2].xyz));
+              buildingUvScale = abs(normal.y) > 0.5
+                ? iScale.xz / 4.0
+                : iScale.xy / 12.0;
+            #endif
+            #include <uv_vertex>
+          `)
+          .replace(/vec3\( uv, 1 \)/g, 'vec3( uv * buildingUvScale, 1 )');
+      };
+      material.customProgramCacheKey = () => 'building-instance-uv-v1';
+    }
   }
 
   private materialsFor(geometry: THREE.BufferGeometry): THREE.Material[] {
     const kind = (geometry.userData.buildingKind as BuildingTextureKind) ?? 'apartments';
-    return [this.wallMaterials[kind] ?? this.wallMaterials.apartments, this.windowMaterial];
+    return [this.wallMaterials[kind] ?? this.wallMaterials.apartments, this.windowMaterial, this.roofMaterial];
   }
 
   get loadedTileCount() { return this.tiles.size; }

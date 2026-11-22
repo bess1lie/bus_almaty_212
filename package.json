@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,js --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,js --report-unused-disable-directives --max-warnings 0",
+    "test:geometry": "node --experimental-strip-types tools/test-building-geometry.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

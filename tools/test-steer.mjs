@@ -10,8 +10,15 @@ await page.waitForTimeout(5000);
 await page.getByText('Свободная езда').click({ timeout: 3000 }).catch(() => {});
 
 const read = () => page.evaluate(() => {
-  const b = window.__busDebug;
-  return b ? { pos: b.pos, yaw: b.yaw, speed: b.speed } : null;
+  const b = window.__busDebug?.bus;
+  if (!b) return null;
+  const p = b.getPosition();
+  const q = b.body.rotation();
+  return {
+    pos: [p.x, p.y, p.z].map((v) => +v.toFixed(2)),
+    yaw: +q.y.toFixed(3),
+    speed: +b.getSpeedKmh().toFixed(1),
+  };
 });
 
 await page.keyboard.down('w');

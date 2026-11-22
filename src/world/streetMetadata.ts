@@ -34,6 +34,7 @@ interface CityTilePayload {
   greenZones?: readonly CityGreenZone[] | readonly PointLike[][];
   greens?: readonly CityGreenZone[] | readonly PointLike[][];
   parks?: readonly CityGreenZone[] | readonly PointLike[][];
+  buildings?: ReadonlyArray<{ poly?: readonly PointLike[]; bounds?: readonly PointLike[] }>;
 }
 
 export interface StreetMetadataOptions {
@@ -226,6 +227,11 @@ export class StreetMetadataProvider {
         } as NonNullable<StreetTileDescriptor['stops']>[number]);
       }
     }
+    const buildings: NonNullable<StreetTileDescriptor['buildings']>[number][] = [];
+    for (const raw of payload.buildings ?? []) {
+      const polygon = parsePolygon(raw.poly ?? raw.bounds ?? []);
+      if (polygon) buildings.push({ points: polygon });
+    }
     return {
       key: tileKey(x, z),
       x,
@@ -233,6 +239,7 @@ export class StreetMetadataProvider {
       roads,
       greenZones: normalizeGreenZones(payload),
       stops,
+      buildings,
       version: VERSION,
     };
   }

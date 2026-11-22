@@ -14,6 +14,12 @@
 | PBR concrete_tile_facade | Poly Haven — https://polyhaven.com/a/concrete_tile_facade | CC0 1.0 | 2026-11-22 | `public/textures/pbr/facade/` |
 | PBR clay_roof_tiles_02 | Poly Haven — https://polyhaven.com/a/clay_roof_tiles_02 | CC0 1.0 | 2026-11-22 | `public/textures/pbr/roof/` |
 | PBR dirt | Poly Haven — https://polyhaven.com/a/dirt | CC0 1.0 | 2026-11-22 | `public/textures/pbr/ground/` |
+| Tree (oak) | Quaternius via Poly Pizza — https://poly.pizza/m/QVOop92WmG | CC0 1.0 | 2026-11-22 | `public/models/city/tree-oak.glb` |
+| Tree (broad) | Quaternius via Poly Pizza — https://poly.pizza/m/qZtx0AHhcy | CC0 1.0 | 2026-11-22 | `public/models/city/tree-broad.glb` |
+| Tree (pine) | Quaternius via Poly Pizza — https://poly.pizza/m/1BkD9JnKrE | CC0 1.0 | 2026-11-22 | `public/models/city/tree-pine.glb` |
+| Street light | Quaternius via Poly Pizza — https://poly.pizza/m/nFwrlcLvM5 | CC0 1.0 | 2026-11-22 | `public/models/city/street-light.glb` |
+
+Городские GLB оптимизированы скриптом `tools/optimize-city-model.mjs`: встроенные PNG-текстуры удалены (streetProps всё равно использует только вершинные цвета), 5 МБ → 656 КБ.
 
 ## Модель автобуса
 

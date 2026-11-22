@@ -41,6 +41,8 @@ export interface StreetTileDescriptor {
   roads?: readonly StreetRoadInput[];
   greenZones?: readonly StreetGreenZoneInput[];
   stops?: readonly StreetStopInput[];
+  /** Реальные контуры зданий из OSM — нужны, чтобы не ставить деревья в стены. */
+  buildings?: ReadonlyArray<{ points: readonly StreetPoint[] }>;
   version?: string | number;
 }
 
@@ -56,14 +58,17 @@ export interface StreetTileKeyProvider {
 }
 
 export interface StreetPropsOptions {
-  /** Корневой объект bus_root. */
-  busRoot?: THREE.Object3D;
+  /** На слабых устройствах CC0-модели не загружаются — остаются примитивы. */
+  detailedModels?: boolean;
 }
 
 export interface StreetPropsController {
   update(cameraPos: THREE.Vector3, dt?: number): void;
   dispose(): void;
-  getStats(): { tiles: number; trees: number; lamps: number; sidewalks: number; lines: number; stops: number };
+  getStats(): {
+    tiles: number; trees: number; lamps: number; sidewalks: number;
+    lines: number; stops: number; modelTrees: number; modelLamps: number;
+  };
 }
 
 const TILE_SIZE = 2000;
@@ -74,6 +79,11 @@ const MAX_LAMPS = 400;
 const MAX_POINT_LIGHTS = 5;
 const MAX_TRIANGLES = 30_000;
 const MAX_STOPS_VISIBLE = 12;
+// CC0-модели только для ближних объектов: остальные остаются дешёвыми примитивами.
+const DETAIL_TREE_CAPACITY = 18;
+const DETAIL_LAMP_CAPACITY = 8;
+const DETAIL_TREE_TRIANGLE_BUDGET = 36_000;
+const DETAIL_LAMP_TRIANGLE_BUDGET = 8_000;
 const MAX_STOP_INSTANCES = 128;
 const MAX_SIDEWALK_INSTANCES = 12_000;
 const MAX_LINE_SEGMENTS = 24_000;
@@ -94,6 +104,11 @@ interface WorldRoad {
   width: number;
   sidewalks: boolean;
   markings: boolean;
+}
+
+interface CityModelBatch {
+  mesh: THREE.InstancedMesh;
+  triangles: number;
 }
 
 interface TreeCandidate {
@@ -142,6 +157,7 @@ interface RuntimeTileData {
   roads: WorldRoad[];
   greenZones: THREE.Vector2[][];
   stops: StopCandidate[];
+  buildingBoxes: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }>;
 }
 
 interface FlattenedModel {
@@ -399,6 +415,7 @@ function urlForPublicAsset(path: string): string {
 export function createStreetProps(
   scene: THREE.Scene,
   getTileKeys: StreetTileKeyProvider,
+  options: StreetPropsOptions = {},
 ): StreetPropsController {
   const gridOrigin = getGridOrigin(scene);
   const loader = new GLTFLoader();
@@ -438,6 +455,9 @@ export function createStreetProps(
   const lastCamera = new THREE.Vector3(Number.POSITIVE_INFINITY, 0, 0);
   let refreshElapsed = Number.POSITIVE_INFINITY;
   let sourceStopReady = false;
+  const modelTrees: CityModelBatch[] = [];
+  let modelLamp: CityModelBatch | null = null;
+  let modelMaterial: THREE.MeshStandardMaterial | null = null;
 
   // Low-poly geometries are deliberately tiny to keep the full module under 30k tris.
   trunkGeometry = new THREE.CylinderGeometry(0.14, 0.18, 1, 3, 1, true); // 6 tris
@@ -639,7 +659,15 @@ export function createStreetProps(
       }
     }
 
-    return { key, x, z, roads, greenZones, stops };
+    const buildingBoxes = (descriptor?.buildings ?? []).map((b) => {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const p of b.points) {
+        minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+        minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]);
+      }
+      return { minX, maxX, minZ, maxZ };
+    }).filter((b) => Number.isFinite(b.minX) && b.maxX > b.minX && b.maxZ > b.minZ);
+    return { key, x, z, roads, greenZones, stops, buildingBoxes };
   }
 
   function addLine(ax: number, az: number, bx: number, bz: number): void {
@@ -647,6 +675,13 @@ export function createStreetProps(
   }
 
   function addRoadProps(tile: RuntimeTileData): void {
+    const insideBuilding = (x: number, z: number, margin: number): boolean => {
+      for (const b of tile.buildingBoxes) {
+        if (x > b.minX - margin && x < b.maxX + margin &&
+            z > b.minZ - margin && z < b.maxZ + margin) return true;
+      }
+      return false;
+    };
     for (const road of tile.roads) {
       let cumulative = 0;
       for (let segmentIndex = 0; segmentIndex < road.points.length - 1; segmentIndex++) {
@@ -704,6 +739,7 @@ export function createStreetProps(
           const side = ((lampIndex + segmentIndex + hash32(road.id)) & 1) === 0 ? 1 : -1;
           const pX = a.x + dirX * d + normalX * side * (halfRoad + 3.2);
           const pZ = a.y + dirZ * d + normalZ * side * (halfRoad + 3.2);
+          if (insideBuilding(pX, pZ, 1.0)) continue;
           const seed = hash32(`${road.id}:lamp:${segmentIndex}:${lampIndex}`);
           allLamps.push({
             x: pX,
@@ -723,6 +759,7 @@ export function createStreetProps(
           const x = a.x + dirX * d + normalX * side * offset;
           const z = a.y + dirZ * d + normalZ * side * offset;
           if (tile.greenZones.length > 0 && !tile.greenZones.some((polygon) => pointInPolygon(x, z, polygon))) continue;
+          if (insideBuilding(x, z, 2.0)) continue;
           allTrees.push({
             x,
             z,
@@ -757,6 +794,7 @@ export function createStreetProps(
           const pz = z + (random01(seed, 2) - 0.5) * 5;
           if (!pointInPolygon(px, pz, polygon)) continue;
           if (roadDistanceSq(px, pz, tile.roads) < 12 * 12) continue;
+          if (insideBuilding(px, pz, 2.0)) continue;
           allTrees.push({
             x: px,
             z: pz,
@@ -838,6 +876,53 @@ export function createStreetProps(
       modernStopMesh = mesh;
     }
     return mesh;
+  }
+
+  /** Приводит CC0-модель к 1 м высоты, основанию в y=0 и вертикальной оси. */
+  function normalizeCityModel(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    const size = box.getSize(new THREE.Vector3());
+    // Некоторые модели (фонарь) автором повёрнуты: длинная ось — Z.
+    if (size.z > size.y && size.z > size.x) geometry.rotateX(-Math.PI / 2);
+    geometry.computeBoundingBox();
+    const b = geometry.boundingBox!;
+    const h = Math.max(0.01, b.max.y - b.min.y);
+    const center = b.getCenter(new THREE.Vector3());
+    geometry.translate(-center.x, -b.min.y, -center.z);
+    geometry.scale(1 / h, 1 / h, 1 / h);
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  async function loadCityModels(): Promise<void> {
+    modelMaterial = new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.92, metalness: 0.02,
+    });
+    const loadOne = async (file: string, capacity: number): Promise<CityModelBatch | null> => {
+      const gltf = await loader.loadAsync(urlForPublicAsset(`models/city/${file}`));
+      if (disposed) { disposeObjectAssets(gltf.scene); return null; }
+      const flattened = flattenGLTFScene(gltf.scene);
+      disposeObjectAssets(gltf.scene);
+      normalizeCityModel(flattened.geometry);
+      const mesh = makeInstanced(flattened.geometry, modelMaterial!, capacity, `street-city-${file}`);
+      scene.add(mesh);
+      return { mesh, triangles: flattened.triangles };
+    };
+    try {
+      const [oak, broad, pine, lamp] = await Promise.all([
+        loadOne('tree-oak.glb', DETAIL_TREE_CAPACITY),
+        loadOne('tree-broad.glb', DETAIL_TREE_CAPACITY),
+        loadOne('tree-pine.glb', DETAIL_TREE_CAPACITY),
+        loadOne('street-light.glb', DETAIL_LAMP_CAPACITY),
+      ]);
+      for (const batch of [oak, broad, pine]) if (batch) modelTrees.push(batch);
+      modelLamp = lamp;
+      console.info('[streetProps] CC0 city models loaded:', modelTrees.length, 'trees, lamp:', !!modelLamp);
+    } catch (error) {
+      if (!disposed) console.warn('[streetProps] CC0 models unavailable, primitives only:', error);
+    }
   }
 
   async function loadStopModels(): Promise<void> {
@@ -957,12 +1042,30 @@ export function createStreetProps(
       }
     }
 
+    // CC0-модели идут только ближайшим объектам; остальные — дешёвые примитивы.
+    const modelTri = modelTrees.length > 0 ? modelTrees[0].triangles : 0;
+    const detailTreeTotal = modelTrees.length === 0 ? 0 : Math.min(
+      nearbyTrees.length,
+      DETAIL_TREE_CAPACITY * modelTrees.length,
+      Math.floor(DETAIL_TREE_TRIANGLE_BUDGET / Math.max(1, modelTri)),
+    );
+    const detailLampTotal = modelLamp
+      ? Math.min(nearbyLamps.length, DETAIL_LAMP_CAPACITY,
+        Math.floor(DETAIL_LAMP_TRIANGLE_BUDGET / Math.max(1, modelLamp.triangles)))
+      : 0;
+
     const treeTriangles = 12;
-    const treeCount = Math.min(nearbyTrees.length, MAX_TREES, Math.floor(remainingTriangles / treeTriangles));
+    const treeCount = Math.min(
+      nearbyTrees.length - detailTreeTotal, MAX_TREES,
+      Math.floor(remainingTriangles / treeTriangles),
+    );
     remainingTriangles -= treeCount * treeTriangles;
 
     const lampTriangles = 12;
-    const lampCount = Math.min(nearbyLamps.length, MAX_LAMPS, Math.floor(remainingTriangles / lampTriangles));
+    const lampCount = Math.min(
+      nearbyLamps.length - detailLampTotal, MAX_LAMPS,
+      Math.floor(remainingTriangles / lampTriangles),
+    );
     remainingTriangles -= lampCount * lampTriangles;
 
     // Sidewalks are 2 triangles per visible road-side segment. Sort only when the
@@ -975,7 +1078,7 @@ export function createStreetProps(
     remainingTriangles -= sidewalkCount * 2;
 
     for (let i = 0; i < treeCount; i++) {
-      const tree = nearbyTrees[i].item;
+      const tree = nearbyTrees[detailTreeTotal + i].item;
       const trunkHeight = tree.height * 0.48;
       const crownHeight = tree.height * 0.56;
       writeMatrix(treeTrunks, i, tree.x, trunkHeight * 0.5, tree.z, 0,
@@ -988,7 +1091,7 @@ export function createStreetProps(
     updateInstancedMesh(treeCrowns, treeCount);
 
     for (let i = 0; i < lampCount; i++) {
-      const lamp = nearbyLamps[i].item;
+      const lamp = nearbyLamps[detailLampTotal + i].item;
       writeMatrix(lampPoles, i, lamp.x, lamp.height * 0.5, lamp.z, 0,
         1, lamp.height, 1);
       writeMatrix(lampHeads, i, lamp.x, lamp.height - 0.08, lamp.z, lamp.yaw,
@@ -998,6 +1101,29 @@ export function createStreetProps(
     updateInstancedMesh(lampPoles, lampCount);
     updateInstancedMesh(lampHeads, lampCount);
     updateInstancedMesh(lampPools, lampCount);
+
+    if (modelTrees.length > 0) {
+      const perVariant = new Array<number>(modelTrees.length).fill(0);
+      for (let i = 0; i < detailTreeTotal; i++) {
+        const tree = nearbyTrees[i].item;
+        const variant = tree.seed % modelTrees.length;
+        const batch = modelTrees[variant];
+        const index = perVariant[variant]++;
+        writeMatrix(batch.mesh, index, tree.x, 0, tree.z,
+          ((tree.seed >>> 0) % 628) / 100, tree.height, tree.height, tree.height);
+      }
+      for (let v = 0; v < modelTrees.length; v++) {
+        updateInstancedMesh(modelTrees[v].mesh, perVariant[v]);
+      }
+    }
+    if (modelLamp) {
+      for (let i = 0; i < detailLampTotal; i++) {
+        const lamp = nearbyLamps[i].item;
+        writeMatrix(modelLamp.mesh, i, lamp.x, 0, lamp.z, lamp.yaw,
+          lamp.height, lamp.height, lamp.height);
+      }
+      updateInstancedMesh(modelLamp.mesh, detailLampTotal);
+    }
 
     for (let i = 0; i < sidewalkCount; i++) {
       const sidewalk = nearbySidewalks[i].item;
@@ -1066,6 +1192,8 @@ export function createStreetProps(
     const renderObjects: THREE.Object3D[] = [treeTrunks, treeCrowns, lampPoles, lampHeads, lampPools, sidewalks, roadLines];
     if (sovietStopMesh) renderObjects.push(sovietStopMesh);
     if (modernStopMesh) renderObjects.push(modernStopMesh);
+    for (const batch of modelTrees) renderObjects.push(batch.mesh);
+    if (modelLamp) renderObjects.push(modelLamp.mesh);
     for (const object of renderObjects) {
       scene.remove(object);
       const mesh = object as THREE.Mesh;
@@ -1092,6 +1220,7 @@ export function createStreetProps(
     lampHeadMaterial.dispose();
     sidewalkMaterial.dispose();
     lineMaterial.dispose();
+    modelMaterial?.dispose();
 
     // Stop geometries/materials are disposed with their InstancedMesh above.
     allTrees.length = 0;
@@ -1105,6 +1234,7 @@ export function createStreetProps(
   void loadStopModels().catch((error: unknown) => {
     if (!disposed) console.error('[streetProps] Failed to load bus stop GLB models:', error);
   });
+  if (options.detailedModels !== false) void loadCityModels();
 
   function getStats() {
     return {
@@ -1114,6 +1244,8 @@ export function createStreetProps(
       sidewalks: sidewalks?.count ?? 0,
       lines: roadLines?.geometry?.getAttribute('position')?.count ?? 0,
       stops: allStops.length,
+      modelTrees: modelTrees.reduce((sum, b) => sum + b.mesh.count, 0),
+      modelLamps: modelLamp?.mesh.count ?? 0,
     };
   }
 

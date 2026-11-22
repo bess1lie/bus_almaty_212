@@ -126,7 +126,10 @@ async function main() {
   );
 
   // Уличные объекты (деревья, фонари, разметка, остановки)
-  streetProps = createStreetProps(scene, streetMetadata.tileKeyProvider);
+  const quality = detectQuality();
+  streetProps = createStreetProps(scene, streetMetadata.tileKeyProvider, {
+    detailedModels: quality.preset !== 'low',
+  });
 
   traffic = createTraffic(scene, cityWorld.graph);
 
@@ -136,7 +139,7 @@ async function main() {
   bus.setCameraMode('chase');
   // LOD автобуса: 34.9k / 13.1k / 4.5k треугольников.
   // На слабых устройствах не платим за незаметные детали высокого LOD.
-  const qualityPreset = detectQuality().preset;
+  const qualityPreset = quality.preset;
   const busLod = qualityPreset === 'low' ? '-lod2' : qualityPreset === 'medium' ? '-lod1' : '';
   const modelUrl = `${import.meta.env.BASE_URL}models/vehicles/tevy-non-step-city-bus${busLod}.glb`;
   const fallbackUrl = `${import.meta.env.BASE_URL}models/variants/bus_almaty_212_golden_hour.glb`;

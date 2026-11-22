@@ -13,19 +13,25 @@
           "name_ru": "ТРЦ Almaty Mall",
           "name_kz": null,
           "sequence": 1,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": true
+          "lat": 43.2073408,
+          "lon": 76.8604469,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": true,
+          "osm_stop_id": "501603209",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Бутина",
           "name_kz": null,
           "sequence": 2,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2056935,
+          "lon": 76.8556095,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "12407318450",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Микрорайон Таугуль-3",
@@ -94,19 +100,25 @@
           "name_ru": "Почтовое отделение №67",
           "name_kz": null,
           "sequence": 10,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.1907612,
+          "lon": 76.8281741,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "9791529379",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Мечеть",
           "name_kz": null,
           "sequence": 11,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2263154,
+          "lon": 76.8913757,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "13277719422",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Мереке",
@@ -193,10 +205,13 @@
           "name_ru": "По требованию",
           "name_kz": "Талап бойынша",
           "sequence": 21,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Суюнбая, село Кыргауылды",
@@ -238,19 +253,25 @@
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 26,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Мечеть",
           "name_kz": null,
           "sequence": 27,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2263154,
+          "lon": 76.8913757,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "13277719422",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Музей Анаға құрмет",
@@ -265,10 +286,13 @@
           "name_ru": "Конный клуб",
           "name_kz": null,
           "sequence": 29,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.1680181,
+          "lon": 76.6830544,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "12523335123",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Дачи Энергетик",
@@ -310,10 +334,13 @@
           "name_ru": "Улица Абая",
           "name_kz": null,
           "sequence": 34,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2834813,
+          "lon": 77.2186237,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "14274296312",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Алатау",
@@ -328,10 +355,13 @@
           "name_ru": "Школа",
           "name_kz": null,
           "sequence": 36,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.256295,
+          "lon": 76.8797356,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "1201876226",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Посёлок Жандосов",
@@ -407,19 +437,25 @@
           "name_ru": "Улица Темирбекова",
           "name_kz": null,
           "sequence": 5,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.1660672,
+          "lon": 76.5650447,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "12523335124",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Абая",
           "name_kz": null,
           "sequence": 6,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2834813,
+          "lon": 77.2186237,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "14274296312",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "СО Береке-Фино",
@@ -452,28 +488,37 @@
           "name_ru": "Долан",
           "name_kz": null,
           "sequence": 10,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2141422,
+          "lon": 76.6871356,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "12308818117",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Конный клуб",
           "name_kz": null,
           "sequence": 11,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.1680181,
+          "lon": 76.6830544,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "12523335123",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": null,
           "sequence": 12,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Музей Анаға құрмет",
@@ -488,19 +533,25 @@
           "name_ru": "Мечеть",
           "name_kz": null,
           "sequence": 14,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2263154,
+          "lon": 76.8913757,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "13277719422",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "По требованию",
           "name_kz": "Талап бойынша",
           "sequence": 15,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "СТ Транспортник-88",
@@ -542,10 +593,13 @@
           "name_ru": "По требованию",
           "name_kz": "Талап бойынша",
           "sequence": 20,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2670684,
+          "lon": 76.9137016,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "5210685421",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Аксай Саялы, село Кыргауылды",
@@ -650,10 +704,13 @@
           "name_ru": "Микрорайон Таусамалы",
           "name_kz": null,
           "sequence": 32,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.1887253,
+          "lon": 76.8344451,
+          "coordinate_status": "osm_exact_name_unique",
+          "terminal": false,
+          "osm_stop_id": "9791537796",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Улица Грозы",
@@ -722,10 +779,13 @@
           "name_ru": "Улица Саина",
           "name_kz": "Саин көшесі",
           "sequence": 40,
-          "lat": null,
-          "lon": null,
-          "coordinate_status": "unconfirmed",
-          "terminal": false
+          "lat": 43.2856014,
+          "lon": 76.830775,
+          "coordinate_status": "osm_name_multiple",
+          "terminal": false,
+          "osm_stop_id": "14278921987",
+          "osm_stop_type": "node",
+          "coordinate_source": "public/map/v1/stops-index.json"
         },
         {
           "name_ru": "Микрорайон Таугуль-3",
@@ -773,7 +833,16 @@
     "coordinates": "unconfirmed_null",
     "coordinate_note": "В открытых текстовых карточках WikiRoutes/Yandex не отображены координаты большинства остановок. Координаты намеренно оставлены null, чтобы не подменять остановочные пункты геокодированными центрами улиц или объектов.",
     "name_kz_note": "name_kz заполнено только там, где исходная публикация явно содержит казахское наименование. Иначе null.",
-    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика."
+    "source_conflict_note": "Данные разных агрегаторов местами расходятся по числу остановок и списку направлений. Перед использованием для навигации требуется сверка с 2GIS/официальной схемой или GTFS перевозчика.",
+    "osm_coordinate_enrichment": {
+      "checked_at": "2026-11-21T06:39:51.972Z",
+      "source": "public/map/v1/stops-index.json",
+      "matching": "exact normalized route stop name against OSM name:ru/name:kk/name; unique OSM element only",
+      "updated": 20,
+      "ambiguous": 0,
+      "unmatched": 63,
+      "note": "No geocoding or street-centroid fallback. Ambiguous and unmatched route coordinates remain null."
+    }
   },
   "operational_notes": [
     {

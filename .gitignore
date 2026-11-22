@@ -8,3 +8,4 @@ dist-ssr/
 .DS_Store
 .idea/
 .vscode/
+data/raw/*.pbf

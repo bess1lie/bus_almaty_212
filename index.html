@@ -27,6 +27,18 @@
       @keyframes spin { to { transform: rotate(360deg); } }
       #loading h1 { font-size: 1.4rem; letter-spacing: .12em; text-transform: uppercase; color: #55C4B6; }
       #loading p { margin-top: 8px; color: #94a3b8; font-size: .9rem; }
+      .hud-hidden { opacity: 0 !important; pointer-events: none !important; transition: opacity .2s; }
+      #trip-panel {
+        position: fixed; bottom: 20px; left: 20px;
+        background: rgba(16,30,35,.82); border: 1px solid rgba(85,196,182,.35);
+        border-radius: 8px; padding: 10px 12px; color: #e8f5f1;
+        font: 12px/1.5 system-ui, sans-serif; z-index: 50; min-width: 190px;
+      }
+      .trip-row { display: flex; justify-content: space-between; gap: 16px; }
+      .trip-row span { color: #91aaa6; letter-spacing: .5px; }
+      .trip-row strong { color: #61d0bf; }
+      .trip-row.trip-serving strong { color: #f3a35f; }
+      .trip-msg { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.12); color: #c3b8b5; font-size: 11px; }
     </style>
   </head>
   <body>
@@ -37,6 +49,17 @@
     </div>
 
     <div id="canvas"></div>
+
+    <div id="trip-panel"></div>
+
+    <div id="shift-result" style="display:none; position:fixed; inset:0; background:rgba(10,15,20,.85); z-index:80; align-items:center; justify-content:center;">
+      <div style="background:#101e23; border:1px solid #55c4b6; border-radius:12px; padding:28px 34px; min-width:320px; color:#e8f5f1; font:14px/1.6 system-ui,sans-serif;">
+        <div style="font-size:12px; letter-spacing:3px; color:#9ab;">ИТОГИ СМЕНЫ</div>
+        <h2 id="result-grade" style="margin:8px 0 16px; color:#55c4b6; font-size:26px;">Отлично</h2>
+        <div id="result-body"></div>
+        <button type="button" data-action="new-shift" style="margin-top:18px; width:100%; padding:12px; background:#55c4b6; color:#0b1519; border:none; border-radius:8px; font-weight:700; cursor:pointer;">НОВАЯ СМЕНА</button>
+      </div>
+    </div>
 
     <!-- UI Kit: HUD + главное меню -->
     <div class="game-ui is-menu-open" data-theme="sunset" id="game-ui">
@@ -93,7 +116,15 @@
           <div class="menu-actions">
             <button class="menu-button primary" type="button" data-action="free-ride"><span>Свободная езда</span><span class="menu-arrow">↗</span></button>
             <button class="menu-button" type="button" data-action="lines"><span>Линии</span><span class="menu-arrow">›</span></button>
+            <button class="menu-button" type="button" data-action="finish-shift"><span>Завершить смену</span><span class="menu-arrow">✓</span></button>
+            <button class="menu-button" type="button" data-action="drive-mode"><span>Режим: Аркада</span><span class="menu-arrow">⇄</span></button>
             <button class="menu-button" type="button" data-action="settings"><span>Настройки</span><span class="menu-arrow">›</span></button>
+          </div>
+          <div id="lines-panel" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,.15); padding-top:12px;">
+            <div style="font-size:12px; letter-spacing:2px; color:#9ab; margin-bottom:8px;">ВЫБЕРИТЕ МАРШРУТ</div>
+            <button class="menu-button" type="button" data-route="212" style="width:100%; margin-bottom:6px; text-align:left;"><span>212 · Шамалган — Алматы Mall</span><span class="menu-arrow">↗</span></button>
+            <button class="menu-button" type="button" data-route="230" style="width:100%; margin-bottom:6px; text-align:left;"><span>230 · Аксай — Каскелен</span><span class="menu-arrow">↗</span></button>
+            <button class="menu-button" type="button" data-route="244" style="width:100%; text-align:left;"><span>244 · Метро — Кайнар</span><span class="menu-arrow">↗</span></button>
           </div>
           <div class="menu-footer">LOW-POLY CITY · ALMATY, KZ</div>
         </div>

@@ -15,17 +15,20 @@ export type InputState = {
   camera: boolean;
   horn: boolean;
   reset: boolean;
+  timeOfDay: boolean;
 };
 
 // --- Клавиатура ---
 const kbd = {
   throttle: 0,
+  brake: 0,
   steering: 0,
   handbrake: false,
   doors: false,
   camera: false,
   horn: false,
   reset: false,
+  timeOfDay: false,
 };
 
 // --- Геймпад (только оси и кнопки, без импульсов) ---
@@ -44,6 +47,9 @@ function onKeyDown(e: KeyboardEvent) {
       break;
     case 'KeyS':
     case 'ArrowDown':
+      kbd.brake = 1;
+      break;
+    case 'KeyQ':
       kbd.throttle = -1;
       break;
     case 'KeyA':
@@ -57,6 +63,10 @@ function onKeyDown(e: KeyboardEvent) {
     case 'Space':
       kbd.handbrake = true;
       break;
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      kbd.brake = 1;
+      break;
     case 'KeyF':
       kbd.doors = true;
       break;
@@ -69,6 +79,9 @@ function onKeyDown(e: KeyboardEvent) {
     case 'KeyR':
       kbd.reset = true;
       break;
+    case 'KeyN':
+      kbd.timeOfDay = true;
+      break;
   }
 }
 
@@ -80,6 +93,9 @@ function onKeyUp(e: KeyboardEvent) {
       break;
     case 'KeyS':
     case 'ArrowDown':
+      kbd.brake = 0;
+      break;
+    case 'KeyQ':
       if (kbd.throttle < 0) kbd.throttle = 0;
       break;
     case 'KeyA':
@@ -93,6 +109,10 @@ function onKeyUp(e: KeyboardEvent) {
     case 'Space':
       kbd.handbrake = false;
       break;
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      kbd.brake = 0;
+      break;
   }
 }
 
@@ -105,7 +125,10 @@ function pollGamepad() {
 
   // Триггеры Xbox: axis 5 — R2 (газ), axis 2 — L2 (тормоз). Значения от -1 до 1.
   const gasRaw = gp.axes[5] ?? -1;
-  const brakeRaw = gp.axes[2] ?? -1;
+  // Стандартный mapping: LT = axes[4]; нестандартные рули — axes[2].
+  const brakeRaw = gp.mapping === 'standard'
+    ? (gp.axes[4] ?? -1)
+    : (gp.axes[2] ?? -1);
   pad.throttle = gasRaw > -0.8 ? Math.max(0, (gasRaw + 1) / 2) : 0;
   pad.brake = brakeRaw > -0.8 ? Math.max(0, (brakeRaw + 1) / 2) : 0;
 
@@ -143,7 +166,7 @@ export function getInput(): Readonly<InputState> {
   // Приоритет: клавиатура > геймпад
   const throttle = kbd.throttle !== 0 ? kbd.throttle : pad.throttle;
   const steering = kbd.steering !== 0 ? kbd.steering : pad.steering;
-  const brake = Math.max(pad.brake, kbd.handbrake ? 0 : 0); // brake только с геймпада
+  const brake = Math.max(pad.brake, kbd.brake);
   const handbrake = kbd.handbrake || pad.handbrake;
 
   return {
@@ -155,6 +178,7 @@ export function getInput(): Readonly<InputState> {
     camera: kbd.camera,
     horn: kbd.horn,
     reset: kbd.reset,
+    timeOfDay: kbd.timeOfDay,
   };
 }
 
@@ -164,6 +188,7 @@ export function clearFrameFlags() {
   kbd.camera = false;
   kbd.horn = false;
   kbd.reset = false;
+  kbd.timeOfDay = false;
 }
 
 export function initInput() {
@@ -171,7 +196,12 @@ export function initInput() {
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', () => {
     kbd.throttle = 0;
+    kbd.brake = 0;
     kbd.steering = 0;
     kbd.handbrake = false;
+    kbd.doors = false;
+    kbd.camera = false;
+    kbd.horn = false;
+    kbd.timeOfDay = false;
   });
 }

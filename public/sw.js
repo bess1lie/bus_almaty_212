@@ -1,5 +1,8 @@
 /* Service worker для bus_almaty_212 — кэш оболчки и тайлов. */
-const CACHE = 'bus212-v1';
+const VERSION = 'v2';
+const CACHE = `bus212-${VERSION}`;
+const TILE_CACHE = `bus212-tiles-${VERSION}`;
+const MAX_TILES = 24; // ограничение кэша тайлов
 const SHELL = [
   '/bus_almaty_212/',
   '/bus_almaty_212/index.html',
@@ -20,7 +23,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE && k !== TILE_CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -31,13 +34,35 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
 
   // Тайлы и модель — cache-first, чтобы повторные загрузки были быстрыми
-  if (url.pathname.includes('/map/v1/tiles/') || url.pathname.includes('/models/')) {
+  if (url.pathname.includes('/map/v1/tiles/')) {
+    // Тайлы: network-first с fallback на кэш + жёсткий лимит количества
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          e.waitUntil(
+            caches.open(TILE_CACHE).then(async (c) => {
+              await c.put(e.request, copy);
+              const keys = await c.keys();
+              if (keys.length > MAX_TILES) {
+                await Promise.all(keys.slice(0, keys.length - MAX_TILES).map((k) => c.delete(k)));
+              }
+            })
+          );
+        }
+        return res;
+      }).catch(async () => (await caches.match(e.request)) || Response.error())
+    );
+    return;
+  }
+
+  if (url.pathname.includes('/models/')) {
     e.respondWith(
       caches.match(e.request).then((cached) =>
         cached || fetch(e.request).then((res) => {
           if (res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy));
+            e.waitUntil(caches.open(CACHE).then((c) => c.put(e.request, copy)));
           }
           return res;
         })
